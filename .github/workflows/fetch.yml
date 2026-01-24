@@ -39,8 +39,6 @@ jobs:
         id: fetch
         continue-on-error: true
         run: |
-          cd newsdata
-
           echo "=== Starting MediaCloud pipeline ==="
           echo "Date (UTC): $(date -u +%Y-%m-%d)"
 
@@ -51,29 +49,29 @@ jobs:
 
           echo "=== Pipeline completed ==="
 
-      - name: Check for knowledge base file
+      - name: Check for output file
         id: check
         run: |
-          KB_FILE="knowledge-base/cleaned-news-descriptions-2026.jsonl"
+          OUTPUT_FILE="/tmp/knowledge-base.jsonl"
 
-          if [ -f "$KB_FILE" ]; then
-            echo "has_kb=true" >> $GITHUB_OUTPUT
-            echo "kb_file=$KB_FILE" >> $GITHUB_OUTPUT
-            echo "Found: $KB_FILE"
-            echo "Size: $(wc -c < "$KB_FILE") bytes"
-            echo "Lines: $(wc -l < "$KB_FILE")"
+          if [ -f "$OUTPUT_FILE" ]; then
+            echo "has_output=true" >> $GITHUB_OUTPUT
+            echo "output_file=$OUTPUT_FILE" >> $GITHUB_OUTPUT
+            echo "Found: $OUTPUT_FILE"
+            echo "Size: $(wc -c < "$OUTPUT_FILE") bytes"
+            echo "Lines: $(wc -l < "$OUTPUT_FILE")"
           else
-            echo "has_kb=false" >> $GITHUB_OUTPUT
-            echo "Knowledge base file not found"
+            echo "has_output=false" >> $GITHUB_OUTPUT
+            echo "Output file not found"
           fi
 
       - name: Update Gist
-        if: steps.check.outputs.has_kb == 'true'
+        if: steps.check.outputs.has_output == 'true'
         run: |
-          KB_FILE="${{ steps.check.outputs.kb_file }}"
+          OUTPUT_FILE="${{ steps.check.outputs.output_file }}"
 
           echo "=== Updating Gist ==="
-          gh gist edit "$GIST_ID" -f "knowledge-base.jsonl" "$KB_FILE"
+          gh gist edit "$GIST_ID" -f "knowledge-base.jsonl" "$OUTPUT_FILE"
           echo "=== Gist updated successfully ==="
           echo "URL: https://gist.github.com/$GIST_ID"
 
@@ -83,9 +81,9 @@ jobs:
           echo "================================================"
           echo "MediaCloud fetch completed"
           echo "Date: $(date -u +%Y-%m-%d' '%H:%M' UTC')"
-          if [ "${{ steps.check.outputs.has_kb }}" == "true" ]; then
+          if [ "${{ steps.check.outputs.has_output }}" == "true" ]; then
             echo "Gist updated: https://gist.github.com/$GIST_ID"
           else
-            echo "No knowledge base update"
+            echo "No output to upload"
           fi
           echo "================================================"

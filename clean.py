@@ -9,7 +9,7 @@ Input files (from all date directories in raw/):
   - raw/<date>/urls.jsonl (media_url, publish_date from MediaCloud)
 
 Output file:
-  - ../knowledge-base/cleaned-news-descriptions-2026.jsonl
+  - /tmp/knowledge-base.jsonl (uploaded to gist by workflow)
 
 Logic:
   1. Only entries with "success": true are included
@@ -38,9 +38,8 @@ REPO_ROOT = SCRIPT_DIR.parent  # mina/
 RAW_DIR = SCRIPT_DIR / "raw"
 LOG_FILE = SCRIPT_DIR / "clean.log"
 
-# MINA integration paths
-MINA_KB_DIR = REPO_ROOT / "knowledge-base"
-OUTPUT_FILE = MINA_KB_DIR / "cleaned-news-descriptions-2026.jsonl"
+# Output path (ephemeral - uploaded to gist, not stored in repo)
+OUTPUT_FILE = Path("/tmp/knowledge-base.jsonl")
 
 # Keys to retain in final output
 KEYS_FROM_DESCRIPTIONS = ["description", "title", "url"]
@@ -245,9 +244,6 @@ def main():
 
     problems = []
 
-    # Ensure output directory exists
-    MINA_KB_DIR.mkdir(parents=True, exist_ok=True)
-
     # Load all data sources from raw/<date>/ directories
     try:
         descriptions_entries = load_all_from_raw("descriptions.jsonl")
@@ -408,8 +404,6 @@ def main():
     if response != "y":
         print("Integration skipped. No changes made.")
     else:
-        MINA_KB_DIR.mkdir(parents=True, exist_ok=True)
-
         with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
             for entry in all_entries:
                 f.write(json.dumps(entry, ensure_ascii=False) + "\n")
