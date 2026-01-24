@@ -1,0 +1,92 @@
+# .github/workflows/gist-mediacloud-fetch.yml
+name: "Gist: MediaCloud News Fetch"
+
+on:
+  schedule:
+    - cron: '22 * * * *'  # 15 minutes past every hour
+    - cron: '52 * * * *'  # 45 minutes past every hour
+  workflow_dispatch: {}
+
+concurrency:
+  group: gist-mcloud-fetch
+  cancel-in-progress: true
+
+jobs:
+  fetch-and-update-gist:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    env:
+      MEDIACLOUD_API_KEY: ${{ secrets.MEDIACLOUD_API_KEY }}
+      GH_TOKEN: ${{ secrets.GIST_PAT }}
+      GIST_ID: "d74350025ea1e600d8764aded95bb839"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install mediacloud python-dotenv
+          python3 -m pip install requests beautifulsoup4 lxml tqdm tenacity typer
+
+      - name: Run MediaCloud pipeline
+        id: fetch
+        continue-on-error: true
+        run: |
+          cd newsdata
+
+          echo "=== Starting MediaCloud pipeline ==="
+          echo "Date (UTC): $(date -u +%Y-%m-%d)"
+
+          python3 main.py --auto || {
+            exit_code=$?
+            echo "Pipeline exited with code $exit_code"
+          }
+
+          echo "=== Pipeline completed ==="
+
+      - name: Check for knowledge base file
+        id: check
+        run: |
+          KB_FILE="knowledge-base/cleaned-news-descriptions-2026.jsonl"
+
+          if [ -f "$KB_FILE" ]; then
+            echo "has_kb=true" >> $GITHUB_OUTPUT
+            echo "kb_file=$KB_FILE" >> $GITHUB_OUTPUT
+            echo "Found: $KB_FILE"
+            echo "Size: $(wc -c < "$KB_FILE") bytes"
+            echo "Lines: $(wc -l < "$KB_FILE")"
+          else
+            echo "has_kb=false" >> $GITHUB_OUTPUT
+            echo "Knowledge base file not found"
+          fi
+
+      - name: Update Gist
+        if: steps.check.outputs.has_kb == 'true'
+        run: |
+          KB_FILE="${{ steps.check.outputs.kb_file }}"
+
+          echo "=== Updating Gist ==="
+          gh gist edit "$GIST_ID" -f "knowledge-base.jsonl" "$KB_FILE"
+          echo "=== Gist updated successfully ==="
+          echo "URL: https://gist.github.com/$GIST_ID"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "================================================"
+          echo "MediaCloud fetch completed"
+          echo "Date: $(date -u +%Y-%m-%d' '%H:%M' UTC')"
+          if [ "${{ steps.check.outputs.has_kb }}" == "true" ]; then
+            echo "Gist updated: https://gist.github.com/$GIST_ID"
+          else
+            echo "No knowledge base update"
+          fi
+          echo "================================================"
