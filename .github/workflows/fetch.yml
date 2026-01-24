@@ -52,7 +52,7 @@ jobs:
       - name: Check for output file
         id: check
         run: |
-          OUTPUT_FILE="/tmp/knowledge-base.jsonl"
+          OUTPUT_FILE="/tmp/newsdata.jsonl"
 
           if [ -f "$OUTPUT_FILE" ]; then
             echo "has_output=true" >> $GITHUB_OUTPUT
@@ -71,7 +71,7 @@ jobs:
           OUTPUT_FILE="${{ steps.check.outputs.output_file }}"
 
           echo "=== Updating Gist ==="
-          gh gist edit "$GIST_ID" -f "knowledge-base.jsonl" "$OUTPUT_FILE"
+          gh gist edit "$GIST_ID" -f "newsdata.jsonl" "$OUTPUT_FILE"
           echo "=== Gist updated successfully ==="
           echo "URL: https://gist.github.com/$GIST_ID"
 

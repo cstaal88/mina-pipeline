@@ -9,7 +9,7 @@ Input files (from all date directories in raw/):
   - raw/<date>/urls.jsonl (media_url, publish_date from MediaCloud)
 
 Output file:
-  - /tmp/knowledge-base.jsonl (uploaded to gist by workflow)
+  - /tmp/newsdata.jsonl (uploaded to gist by workflow)
 
 Logic:
   1. Only entries with "success": true are included
@@ -39,11 +39,10 @@ RAW_DIR = SCRIPT_DIR / "raw"
 LOG_FILE = SCRIPT_DIR / "clean.log"
 
 # Output path (ephemeral - uploaded to gist, not stored in repo)
-OUTPUT_FILE = Path("/tmp/knowledge-base.jsonl")
+OUTPUT_FILE = Path("/tmp/newsdata.jsonl")
 
-# Keys to retain in final output
-KEYS_FROM_DESCRIPTIONS = ["description", "title", "url"]
-KEYS_FROM_URLS = ["media_url", "publish_date"]
+# Keys to retain in final output (in order)
+OUTPUT_KEY_ORDER = ["media_url", "title", "description", "publish_date", "url"]
 
 # Keywords to filter content (case-insensitive)
 # Matches against title + description
@@ -304,14 +303,9 @@ def main():
             count_skipped_not_gaza += 1
             continue
 
-        # Build cleaned entry
-        cleaned_entry = {}
-        for key in KEYS_FROM_DESCRIPTIONS:
-            if key in entry:
-                cleaned_entry[key] = entry[key]
-        for key in KEYS_FROM_URLS:
-            if key in urls_data:
-                cleaned_entry[key] = urls_data[key]
+        # Build cleaned entry with specified key order
+        combined = {**urls_data, **entry}  # entry overwrites urls_data for shared keys
+        cleaned_entry = {k: combined[k] for k in OUTPUT_KEY_ORDER if k in combined}
 
         new_entries.append(cleaned_entry)
         existing_urls.add(url)  # Prevent duplicates within this run

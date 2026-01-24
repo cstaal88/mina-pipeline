@@ -60,9 +60,12 @@ _ALL_SOURCE_IDS = {
      "washingtonpost.com": 2,
 }
 
-# HARDCODED: Only nypost.com for now (testing scheduled workflow)
-# TODO: Restore _ALL_SOURCE_IDS when workflow is confirmed working
-SOURCE_IDS = {"nypost.com": 7}
+# Active outlets for fetching
+SOURCE_IDS = {
+    "nypost.com": 7,
+    "nytimes.com": 1,
+    "foxnews.com": 1092,
+}
 
 OUT_FILE = "urls.jsonl"
 MAX_PER_SOURCE = 100
