@@ -3,7 +3,7 @@ name: "Gist: MediaCloud News Fetch"
 
 on:
   schedule:
-    - cron: '*/5 * * * *'  # Every 5 minutes
+    - cron: '0 * * * *'  # Every 60 minutes
   workflow_dispatch: {}
 
 concurrency:
