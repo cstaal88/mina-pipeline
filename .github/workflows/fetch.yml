@@ -1,10 +1,9 @@
 # .github/workflows/gist-mediacloud-fetch.yml
 name: "Gist: MediaCloud News Fetch"
 
+
 on:
-  schedule:
-    - cron: '0 * * * *'  # Every 60 minutes
-  workflow_dispatch: {}
+  workflow_dispatch: {} # triggered automatically each our (:36) via https://console.cron-job.org
 
 concurrency:
   group: gist-mcloud-fetch
