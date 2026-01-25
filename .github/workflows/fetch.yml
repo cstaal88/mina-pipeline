@@ -34,6 +34,19 @@ jobs:
           python3 -m pip install mediacloud python-dotenv
           python3 -m pip install requests beautifulsoup4 lxml tqdm tenacity typer
 
+      - name: Download existing gist data
+        run: |
+          OUTPUT_FILE="/tmp/newsdata.jsonl"
+
+          echo "=== Downloading existing gist data ==="
+          if gh gist view "$GIST_ID" -f "newsdata.jsonl" > "$OUTPUT_FILE" 2>/dev/null; then
+            EXISTING=$(wc -l < "$OUTPUT_FILE")
+            echo "Downloaded $EXISTING existing records"
+          else
+            echo "No existing data (new gist or empty)"
+            touch "$OUTPUT_FILE"
+          fi
+
       - name: Run MediaCloud pipeline
         id: fetch
         continue-on-error: true
