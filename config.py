@@ -93,6 +93,12 @@ TOPICS = {
             "minneapolis", "minnesota", "ice",
             "shooting", "shot", "killed", "fatal", "death",
         ],
+        # Topic keywords for strict relevance filtering
+        # KEEP if: keyword in TITLE, OR keyword appears 2+ times in DESCRIPTION
+        "topic_keywords": [
+            "minneapolis", "minnesota", "pretti", "ice shooting", "ice raid",
+            "renée good", "renee good",
+        ],
         # Gist contains: raw.jsonl, clean.jsonl
         "gist_id": "839f9f409d36d715d277095886ced536",
     },
@@ -111,6 +117,11 @@ TOPICS = {
         "filter_keywords": [
             "trump", "greenland", "buy", "purchase", "acquisition",
             "united states", "deal", "agreement",
+        ],
+        # Topic keywords for strict relevance filtering
+        # KEEP if: keyword in TITLE, OR keyword appears 2+ times in DESCRIPTION
+        "topic_keywords": [
+            "greenland", "denmark", "danish", "nuuk", "arctic",
         ],
         # Gist contains: raw.jsonl, clean.jsonl
         "gist_id": "a046f4a9233ff2e499dfeb356e081d79",

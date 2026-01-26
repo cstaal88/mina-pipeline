@@ -165,12 +165,62 @@ def build_url_index(entries: list[dict], key: str = "url") -> dict[str, dict]:
     return {entry[key]: entry for entry in entries if key in entry}
 
 
-def is_topic_related(entry: dict, filter_keywords: list[str]) -> bool:
-    """Check if entry is related to topic based on title + description."""
+def is_topic_related(entry: dict, filter_keywords: list[str], exclude_keywords: list[str] | None = None) -> bool:
+    """Check if entry is related to topic based on title + description.
+    
+    Args:
+        entry: Article entry dict
+        filter_keywords: Keywords that MUST be present (at least one)
+        exclude_keywords: Keywords that will EXCLUDE the article if present
+    """
     title = entry.get("title") or ""
     description = entry.get("description") or ""
     text = (title + " " + description).lower()
-    return any(keyword.lower() in text for keyword in filter_keywords)
+    
+    # Must match at least one include keyword
+    if not any(keyword.lower() in text for keyword in filter_keywords):
+        return False
+    
+    # Must NOT match any exclude keyword
+    if exclude_keywords:
+        if any(keyword.lower() in text for keyword in exclude_keywords):
+            return False
+    
+    return True
+
+
+def is_topic_relevant(entry: dict, topic_keywords: list[str]) -> bool:
+    """Strict topic relevance check - article must be PRIMARILY about the topic.
+    
+    Heuristic:
+      KEEP if ANY topic keyword appears in TITLE (case-insensitive), OR
+      KEEP if ANY topic keyword appears 2+ times in DESCRIPTION (case-insensitive)
+    
+    This filters out articles that mention the topic only in passing.
+    
+    Args:
+        entry: Article entry dict
+        topic_keywords: Core keywords that define the topic (e.g., ["greenland", "denmark"])
+    
+    Returns:
+        True if article is primarily about the topic
+    """
+    if not topic_keywords:
+        return True  # No topic keywords configured = no filtering
+    
+    title = (entry.get("title") or "").lower()
+    description = (entry.get("description") or "").lower()
+    
+    for keyword in topic_keywords:
+        kw = keyword.lower()
+        # Check if keyword in title (substring match)
+        if kw in title:
+            return True
+        # Check if keyword appears 2+ times in description
+        if description.count(kw) >= 2:
+            return True
+    
+    return False
 
 
 def entry_sort_key(entry: dict) -> tuple[str, str]:
@@ -231,6 +281,7 @@ def print_output_stats(topic_config: dict, show_all: bool = False) -> int:
     """Describe the current output file without modifying anything."""
     topic = topic_config["name"]
     filter_keywords = topic_config["filter_keywords"]
+    exclude_keywords = topic_config.get("exclude_keywords", [])
     output_file = get_output_file(topic)
 
     if show_all:
@@ -266,7 +317,7 @@ def print_output_stats(topic_config: dict, show_all: bool = False) -> int:
             url = entry.get("url")
             desc_entry = desc_by_url.get(url, {})
             combined = {**entry, **desc_entry}
-            if is_topic_related(combined, filter_keywords):
+            if is_topic_related(combined, filter_keywords, exclude_keywords):
                 topic_related_count += 1
 
         print(f"\nFilter breakdown:")
@@ -323,6 +374,8 @@ def main():
 
     topic = topic_config["name"]
     filter_keywords = topic_config["filter_keywords"]
+    topic_keywords = topic_config.get("topic_keywords", [])
+    exclude_keywords = topic_config.get("exclude_keywords", [])
     output_file = get_output_file(topic)
     tmp_output_file = get_tmp_output_file(topic)
 
@@ -370,6 +423,7 @@ def main():
     count_skipped_already_exists = 0
     count_skipped_non_english = 0
     count_skipped_not_topic = 0
+    count_skipped_not_relevant = 0
     missing_urls = []
 
     # Process articles
@@ -403,8 +457,8 @@ def main():
             count_skipped_non_english += 1
             continue
 
-        # Filter out non-topic-related entries
-        if not is_topic_related(entry, filter_keywords):
+        # Filter out non-topic-related entries (broad filter)
+        if not is_topic_related(entry, filter_keywords, exclude_keywords):
             count_skipped_not_topic += 1
             continue
 
@@ -415,6 +469,11 @@ def main():
         combined["my_topic"] = topic
         
         cleaned_entry = {k: combined[k] for k in OUTPUT_KEY_ORDER if k in combined}
+
+        # Strict topic relevance filter (must be PRIMARILY about the topic)
+        if topic_keywords and not is_topic_relevant(cleaned_entry, topic_keywords):
+            count_skipped_not_relevant += 1
+            continue
 
         new_entries.append(cleaned_entry)
         existing_urls.add(url)  # Prevent duplicates within this run
@@ -455,6 +514,7 @@ def main():
     logger.info(f"Skipped (success=false): {count_skipped_not_success}")
     logger.info(f"Skipped (non-English): {count_skipped_non_english}")
     logger.info(f"Skipped (not topic-related): {count_skipped_not_topic}")
+    logger.info(f"Skipped (not relevant - off-topic): {count_skipped_not_relevant}")
     logger.info(f"Skipped (already in output): {count_skipped_already_exists}")
     logger.info(f"Added to output: {count_added}")
     logger.info(f"Output file (after run): {count_existing + count_added} entries")
@@ -473,6 +533,7 @@ def main():
     print(f"   - Skipped (not successful): {count_skipped_not_success}")
     print(f"   - Skipped (non-English): {count_skipped_non_english}")
     print(f"   - Skipped (not topic-related): {count_skipped_not_topic}")
+    print(f"   - Skipped (not relevant - off-topic): {count_skipped_not_relevant}")
     print(f"   - Skipped (already exists): {count_skipped_already_exists}")
     print(f"   - Added to output: {count_added}")
     print(f"   - Total in output now: {count_existing + count_added}")

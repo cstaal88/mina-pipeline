@@ -99,3 +99,50 @@
 2026-01-26 09:27:34 | INFO | Output file (after run): 3070 entries
 2026-01-26 09:27:34 | INFO | Duration: 0.05 seconds
 2026-01-26 09:27:34 | INFO | RUN COMPLETED
+2026-01-26 15:53:12 | INFO | ============================================================
+2026-01-26 15:53:12 | INFO | RUN STARTED - Topic: greenland-trump
+2026-01-26 15:53:12 | INFO | REGENERATE MODE: rebuilding clean file from scratch
+2026-01-26 15:53:12 | INFO | Topic: greenland-trump
+2026-01-26 15:53:12 | INFO | Input (articles): 2046 entries
+2026-01-26 15:53:12 | INFO | Input (urls): 2046 entries
+2026-01-26 15:53:12 | INFO | Output file (before run): 0 entries
+2026-01-26 15:53:12 | INFO | Skipped (success=false): 32
+2026-01-26 15:53:12 | INFO | Skipped (non-English): 1
+2026-01-26 15:53:12 | INFO | Skipped (not topic-related): 566
+2026-01-26 15:53:12 | INFO | Skipped (already in output): 0
+2026-01-26 15:53:12 | INFO | Added to output: 1447
+2026-01-26 15:53:12 | INFO | Output file (after run): 1447 entries
+2026-01-26 15:53:12 | INFO | Duration: 0.02 seconds
+2026-01-26 15:53:12 | INFO | RUN COMPLETED
+2026-01-26 20:03:22 | INFO | ============================================================
+2026-01-26 20:03:22 | INFO | RUN STARTED - Topic: greenland-trump
+2026-01-26 20:03:22 | INFO | REGENERATE MODE: rebuilding clean file from scratch
+2026-01-26 20:03:22 | INFO | Topic: greenland-trump
+2026-01-26 20:03:22 | INFO | Input (articles): 2046 entries
+2026-01-26 20:03:22 | INFO | Input (urls): 2046 entries
+2026-01-26 20:03:22 | INFO | Output file (before run): 0 entries
+2026-01-26 20:03:22 | INFO | Skipped (success=false): 32
+2026-01-26 20:03:22 | INFO | Skipped (non-English): 1
+2026-01-26 20:03:22 | INFO | Skipped (not topic-related): 566
+2026-01-26 20:03:22 | INFO | Skipped (not relevant - off-topic): 671
+2026-01-26 20:03:22 | INFO | Skipped (already in output): 0
+2026-01-26 20:03:22 | INFO | Added to output: 776
+2026-01-26 20:03:22 | INFO | Output file (after run): 776 entries
+2026-01-26 20:03:22 | INFO | Duration: 0.03 seconds
+2026-01-26 20:03:22 | INFO | RUN COMPLETED
+2026-01-26 20:03:36 | INFO | ============================================================
+2026-01-26 20:03:36 | INFO | RUN STARTED - Topic: minneapolis-ice
+2026-01-26 20:03:36 | INFO | REGENERATE MODE: rebuilding clean file from scratch
+2026-01-26 20:03:37 | INFO | Topic: minneapolis-ice
+2026-01-26 20:03:37 | INFO | Input (articles): 5103 entries
+2026-01-26 20:03:37 | INFO | Input (urls): 5103 entries
+2026-01-26 20:03:37 | INFO | Output file (before run): 0 entries
+2026-01-26 20:03:37 | INFO | Skipped (success=false): 60
+2026-01-26 20:03:37 | INFO | Skipped (non-English): 74
+2026-01-26 20:03:37 | INFO | Skipped (not topic-related): 1899
+2026-01-26 20:03:37 | INFO | Skipped (not relevant - off-topic): 1301
+2026-01-26 20:03:37 | INFO | Skipped (already in output): 0
+2026-01-26 20:03:37 | INFO | Added to output: 1769
+2026-01-26 20:03:37 | INFO | Output file (after run): 1769 entries
+2026-01-26 20:03:37 | INFO | Duration: 0.07 seconds
+2026-01-26 20:03:37 | INFO | RUN COMPLETED

@@ -1,10 +1,8 @@
 # .github/workflows/fetch.yml
 # Automated MediaCloud news collection pipeline
 #
-# Triggered via cron-job.org every 30 minutes at :06 and :36
-# Each run collects and cleans news for the specified topic, then uploads to gist
-#
-# IMPORTANT: Always specify --topic explicitly in automated runs
+# Triggered via cron-job.org - runs BOTH topics sequentially
+# Each run collects and cleans news for all topics, then uploads to gists
 
 name: "MediaCloud News Pipeline"
 
@@ -12,24 +10,22 @@ on:
   workflow_dispatch:
     inputs:
       topic:
-        description: 'Topic to collect (e.g., minneapolis-ice, greenland-trump)'
+        description: 'Topic to collect (leave empty for ALL topics)'
         required: false
-        default: 'minneapolis-ice'
+        default: ''
 
 concurrency:
-  group: mcloud-fetch-${{ github.event.inputs.topic || 'minneapolis-ice' }}
+  group: mcloud-fetch
   cancel-in-progress: true
 
 jobs:
   fetch-and-update-gist:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     env:
       MEDIACLOUD_API_KEY: ${{ secrets.MEDIACLOUD_API_KEY }}
       GH_TOKEN: ${{ secrets.GIST_PAT }}
-      # Topic is set from workflow input or defaults to minneapolis-ice
-      TOPIC: ${{ github.event.inputs.topic || 'minneapolis-ice' }}
 
     steps:
       - name: Checkout repo
@@ -46,106 +42,74 @@ jobs:
           python3 -m pip install mediacloud python-dotenv
           python3 -m pip install requests beautifulsoup4 lxml tqdm tenacity typer
 
-      - name: Determine Gist ID for topic
-        id: gist
+      - name: Run pipeline for all topics
         run: |
-          # Gist ID mapping (one gist per topic, containing raw.jsonl and clean.jsonl)
-          case "$TOPIC" in
-            "minneapolis-ice")
-              GIST_ID="839f9f409d36d715d277095886ced536"
-              ;;
-            "greenland-trump")
-              GIST_ID="a046f4a9233ff2e499dfeb356e081d79"
-              ;;
-            *)
-              echo "Unknown topic: $TOPIC"
-              exit 1
-              ;;
-          esac
+          # Determine which topics to run
+          INPUT_TOPIC="${{ github.event.inputs.topic }}"
           
-          echo "gist_id=$GIST_ID" >> $GITHUB_OUTPUT
-          echo "Topic: $TOPIC"
-          echo "Gist ID: $GIST_ID"
-
-      - name: Download existing gist data
-        if: steps.gist.outputs.gist_id != ''
-        run: |
-          GIST_ID="${{ steps.gist.outputs.gist_id }}"
-          CLEAN_DIR="clean"
-          mkdir -p "$CLEAN_DIR"
-          
-          echo "=== Downloading existing gist data for $TOPIC ==="
-          
-          # Download clean.jsonl if it exists
-          if gh gist view "$GIST_ID" -f "clean.jsonl" > "$CLEAN_DIR/articles-${TOPIC}.jsonl" 2>/dev/null; then
-            EXISTING=$(wc -l < "$CLEAN_DIR/articles-${TOPIC}.jsonl")
-            echo "Downloaded $EXISTING existing clean records"
+          if [ -n "$INPUT_TOPIC" ]; then
+            # Single topic specified
+            TOPICS="$INPUT_TOPIC"
           else
-            echo "No existing clean data (new gist or empty)"
-            touch "$CLEAN_DIR/articles-${TOPIC}.jsonl"
+            # Run all topics
+            TOPICS="minneapolis-ice greenland-trump"
           fi
-
-      - name: Run MediaCloud pipeline
-        id: fetch
-        continue-on-error: true
-        run: |
-          echo "=== Starting MediaCloud pipeline for topic: $TOPIC ==="
-          echo "Date (UTC): $(date -u +%Y-%m-%d)"
-
-          # Run the unified pipeline with explicit topic
-          python3 run-pipeline.py --topic "$TOPIC" || {
-            exit_code=$?
-            echo "Pipeline exited with code $exit_code"
-          }
-
-          echo "=== Pipeline completed ==="
-
-      - name: Check for output files
-        id: check
-        run: |
-          CLEAN_FILE="clean/articles-${TOPIC}.jsonl"
-
-          if [ -f "$CLEAN_FILE" ]; then
-            echo "has_output=true" >> $GITHUB_OUTPUT
-            echo "clean_file=$CLEAN_FILE" >> $GITHUB_OUTPUT
-            echo "Found: $CLEAN_FILE"
-            echo "Size: $(wc -c < "$CLEAN_FILE") bytes"
-            echo "Lines: $(wc -l < "$CLEAN_FILE")"
-          else
-            echo "has_output=false" >> $GITHUB_OUTPUT
-            echo "Output file not found: $CLEAN_FILE"
-          fi
-
-      - name: Update Gist
-        if: steps.check.outputs.has_output == 'true' && steps.gist.outputs.gist_id != ''
-        run: |
-          CLEAN_FILE="${{ steps.check.outputs.clean_file }}"
-          GIST_ID="${{ steps.gist.outputs.gist_id }}"
-
-          echo "=== Updating Gist ==="
           
-          # Upload clean.jsonl
-          echo "Uploading clean.jsonl..."
-          gh gist edit "$GIST_ID" -f "clean.jsonl" "$CLEAN_FILE"
+          echo "=== Running pipeline for topics: $TOPICS ==="
           
-          echo "=== Gist updated successfully ==="
-          echo "URL: https://gist.github.com/$GIST_ID"
+          for TOPIC in $TOPICS; do
+            echo ""
+            echo "========================================"
+            echo "TOPIC: $TOPIC"
+            echo "Started: $(date -u +%Y-%m-%d' '%H:%M' UTC')"
+            echo "========================================"
+            
+            # Get gist ID for this topic
+            case "$TOPIC" in
+              "minneapolis-ice")
+                GIST_ID="839f9f409d36d715d277095886ced536"
+                ;;
+              "greenland-trump")
+                GIST_ID="a046f4a9233ff2e499dfeb356e081d79"
+                ;;
+              *)
+                echo "Unknown topic: $TOPIC - skipping"
+                continue
+                ;;
+            esac
+            
+            # Download existing clean data
+            CLEAN_DIR="clean"
+            mkdir -p "$CLEAN_DIR"
+            if gh gist view "$GIST_ID" -f "clean.jsonl" > "$CLEAN_DIR/articles-${TOPIC}.jsonl" 2>/dev/null; then
+              EXISTING=$(wc -l < "$CLEAN_DIR/articles-${TOPIC}.jsonl")
+              echo "Downloaded $EXISTING existing clean records"
+            else
+              echo "No existing clean data"
+              touch "$CLEAN_DIR/articles-${TOPIC}.jsonl"
+            fi
+            
+            # Run pipeline
+            python3 run-pipeline.py --topic "$TOPIC" --auto || echo "Pipeline for $TOPIC exited with code $?"
+            
+            # Upload results
+            CLEAN_FILE="$CLEAN_DIR/articles-${TOPIC}.jsonl"
+            if [ -f "$CLEAN_FILE" ]; then
+              echo "Uploading clean.jsonl to gist..."
+              gh gist edit "$GIST_ID" -f "clean.jsonl" "$CLEAN_FILE"
+              echo "✓ Gist updated: https://gist.github.com/$GIST_ID"
+            fi
+            
+            echo "Completed: $TOPIC"
+          done
+          
+          echo ""
+          echo "=== All topics completed ==="
 
       - name: Summary
         if: always()
         run: |
           echo "================================================"
           echo "MediaCloud Pipeline Completed"
-          echo "Topic: $TOPIC"
           echo "Date: $(date -u +%Y-%m-%d' '%H:%M' UTC')"
-          if [ "${{ steps.check.outputs.has_output }}" == "true" ]; then
-            echo "Output: ${{ steps.check.outputs.clean_file }}"
-            if [ -n "${{ steps.gist.outputs.gist_id }}" ]; then
-              echo "Gist updated: https://gist.github.com/${{ steps.gist.outputs.gist_id }}"
-            else
-              echo "No gist ID configured"
-            fi
-          else
-            echo "No output to upload"
-          fi
           echo "================================================"
