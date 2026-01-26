@@ -2,25 +2,28 @@
 """
 clean.py
 
-Combines data from raw/<date>/ directories to create cleaned news descriptions for MINA.
+Combines data from raw/{topic}/{date}/ directories to create cleaned news articles.
 
-Input files (from all date directories in raw/):
-  - raw/<date>/descriptions.jsonl (scraped descriptions)
-  - raw/<date>/urls.jsonl (media_url, publish_date from MediaCloud)
+Input files (from all date directories in raw/{topic}/):
+  - raw/{topic}/{date}/articles.jsonl (scraped articles with my_topic field)
+  - raw/{topic}/{date}/urls.jsonl (media_url, publish_date from MediaCloud)
 
 Output file:
-  - /tmp/newsdata.jsonl (uploaded to gist by workflow)
+  - clean/articles-{topic}.jsonl (for local use)
+  - /tmp/newsdata-{topic}.jsonl (for gist upload)
 
 Logic:
   1. Only entries with "success": true are included
-  2. Final output contains: description, title, url, media_url, publish_date
+  2. Final output contains: description, title, url, media_url, publish_date, my_topic
   3. Entries already in output (by URL) are skipped
-  4. Throws error if URL in descriptions.jsonl can't be found in urls.jsonl
-  5. Filters for Gaza-related content and English language
+  4. Throws error if URL in articles.jsonl can't be found in urls.jsonl
+  5. Filters for topic-related content and English language
 
 CLI:
+  --topic NAME         Topic to clean (default: DEFAULT_TOPIC from config)
   --stats / --dry-run  Print stats about the output file and exit (no writes, no prompts).
   --stats --all        Print stats for ALL raw collected items (before filtering).
+  --auto               Automatically write without prompting.
 """
 
 import argparse
@@ -28,29 +31,43 @@ import hashlib
 import json
 import logging
 import sys
+from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
+from config import get_topic_config, list_topics, DEFAULT_TOPIC
+
 # === Configuration ===
 SCRIPT_DIR = Path(__file__).parent.resolve()
-REPO_ROOT = SCRIPT_DIR.parent  # mina/
 
-RAW_DIR = SCRIPT_DIR / "raw"
 LOG_FILE = SCRIPT_DIR / "clean.log"
 
-# Output path (ephemeral - uploaded to gist, not stored in repo)
-OUTPUT_FILE = Path("/tmp/newsdata.jsonl")
+# Output directories
+CLEAN_DIR = SCRIPT_DIR / "clean"
+TMP_OUTPUT_DIR = Path("/tmp")
 
 # Keys to retain in final output (in order)
-OUTPUT_KEY_ORDER = ["media_url", "title", "description", "publish_date", "url"]
+OUTPUT_KEY_ORDER = ["media_url", "title", "description", "publish_date", "url", "my_topic"]
 
-# Keywords to filter content (case-insensitive)
-# Matches against title + description
-FILTER_KEYWORDS = [
-    "renée good", "renee good", "renée nicole good",
-    "minneapolis", "minnesota", "ice",
-    "shooting", "shot", "killed", "fatal", "death",
-]
+
+def get_raw_dir(topic: str) -> Path:
+    """Get raw directory for a topic."""
+    return SCRIPT_DIR / "raw" / topic
+
+
+def get_combined_raw_file(topic: str) -> Path:
+    """Get combined raw file path for gist upload."""
+    return SCRIPT_DIR / "raw" / topic / "_combined.jsonl"
+
+
+def get_output_file(topic: str) -> Path:
+    """Get clean output file path for a topic."""
+    return CLEAN_DIR / f"articles-{topic}.jsonl"
+
+
+def get_tmp_output_file(topic: str) -> Path:
+    """Get temp output file path for gist upload."""
+    return TMP_OUTPUT_DIR / f"newsdata-{topic}.jsonl"
 
 
 def setup_logging():
@@ -65,7 +82,7 @@ def setup_logging():
 
 
 def load_jsonl(filepath: Path) -> list[dict]:
-    """Load all entries from a JSONL file."""
+    """Load all entries from a JSONL file, skipping metadata entries."""
     entries = []
     if not filepath.exists():
         return entries
@@ -73,16 +90,21 @@ def load_jsonl(filepath: Path) -> list[dict]:
         for line in f:
             line = line.strip()
             if line:
-                entries.append(json.loads(line))
+                entry = json.loads(line)
+                # Skip metadata entries
+                if entry.get("_meta") or entry.get("_manifest"):
+                    continue
+                entries.append(entry)
     return entries
 
 
-def load_all_from_raw(filename: str) -> list[dict]:
-    """Load all entries from raw/<date>/<filename> across all date directories."""
+def load_all_from_raw(topic: str, filename: str) -> list[dict]:
+    """Load all entries from raw/{topic}/{date}/{filename} across all date directories."""
     all_entries = []
-    if not RAW_DIR.exists():
+    raw_dir = get_raw_dir(topic)
+    if not raw_dir.exists():
         return all_entries
-    for date_dir in sorted(RAW_DIR.iterdir()):
+    for date_dir in sorted(raw_dir.iterdir()):
         if date_dir.is_dir():
             file_path = date_dir / filename
             if file_path.exists():
@@ -90,17 +112,65 @@ def load_all_from_raw(filename: str) -> list[dict]:
     return all_entries
 
 
+def get_dates_collected(topic: str) -> list[str]:
+    """Get list of date directories that have been collected."""
+    raw_dir = get_raw_dir(topic)
+    if not raw_dir.exists():
+        return []
+    dates = []
+    for date_dir in sorted(raw_dir.iterdir()):
+        if date_dir.is_dir() and not date_dir.name.startswith("_"):
+            # Check if it has articles
+            if (date_dir / "articles.jsonl").exists():
+                dates.append(date_dir.name)
+    return dates
+
+
+def create_meta_header(topic: str, record_count: int, dates_collected: list[str]) -> dict:
+    """Create a metadata header for JSONL files."""
+    return {
+        "_meta": True,
+        "topic": topic,
+        "record_count": record_count,
+        "dates_collected": dates_collected,
+        "date_range": {
+            "start": dates_collected[0] if dates_collected else None,
+            "end": dates_collected[-1] if dates_collected else None,
+        },
+        "last_updated": datetime.now().isoformat(),
+    }
+
+
+def combine_raw_files(topic: str) -> Path:
+    """Combine all raw articles into a single file with meta header."""
+    articles = load_all_from_raw(topic, "articles.jsonl")
+    dates = get_dates_collected(topic)
+    
+    combined_file = get_combined_raw_file(topic)
+    
+    with open(combined_file, "w", encoding="utf-8") as f:
+        # Write meta header first
+        meta = create_meta_header(topic, len(articles), dates)
+        f.write(json.dumps(meta, ensure_ascii=False) + "\n")
+        
+        # Write all articles
+        for article in articles:
+            f.write(json.dumps(article, ensure_ascii=False) + "\n")
+    
+    return combined_file
+
+
 def build_url_index(entries: list[dict], key: str = "url") -> dict[str, dict]:
     """Build a dict mapping URL -> entry for fast lookups."""
     return {entry[key]: entry for entry in entries if key in entry}
 
 
-def is_gaza_related(entry: dict) -> bool:
-    """Check if entry is related to Gaza conflict based on title + description."""
+def is_topic_related(entry: dict, filter_keywords: list[str]) -> bool:
+    """Check if entry is related to topic based on title + description."""
     title = entry.get("title") or ""
     description = entry.get("description") or ""
     text = (title + " " + description).lower()
-    return any(keyword in text for keyword in FILTER_KEYWORDS)
+    return any(keyword.lower() in text for keyword in filter_keywords)
 
 
 def entry_sort_key(entry: dict) -> tuple[str, str]:
@@ -112,18 +182,18 @@ def entry_sort_key(entry: dict) -> tuple[str, str]:
     - Fully deterministic: adding new items doesn't change existing items' positions
     - When budget truncates, oldest items are cut first
     """
-    # Invert date so newest sorts first (e.g., "2026-01-22" -> "7973-98-77")
     date = entry.get("publish_date", "0000-00-00")
     inverted_date = "".join(str(9 - int(c)) if c.isdigit() else c for c in date)
-
     url_hash = hashlib.md5(entry.get("url", "").encode()).hexdigest()
     return (inverted_date, url_hash)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        description="Build MINA cleaned-news-descriptions JSONL from raw data."
+        description="Build cleaned news articles JSONL from raw data."
     )
+    p.add_argument("--topic", type=str, default=None,
+                   help=f"Topic to clean (default: {DEFAULT_TOPIC})")
     p.add_argument(
         "--stats",
         action="store_true",
@@ -137,66 +207,72 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument(
         "--all",
         action="store_true",
-        help="With --stats: show stats for ALL collected items (before filtering), not just cleaned output.",
+        help="With --stats: show stats for ALL collected items (before filtering).",
     )
     p.add_argument(
-        "--auto",
+        "--append",
         action="store_true",
-        help="Automatically integrate without prompting.",
+        help="Append to existing clean.jsonl instead of regenerating from scratch.",
+    )
+    p.add_argument(
+        "--no-write",
+        action="store_true",
+        help="Show what would be written but don't actually write.",
+    )
+    p.add_argument(
+        "--list-topics",
+        action="store_true",
+        help="List available topics and exit.",
     )
     return p.parse_args(argv)
 
 
-def print_output_stats(show_all: bool = False) -> int:
-    """Describe the current output file without modifying anything.
-
-    If show_all=True, shows stats for ALL raw collected items (before filtering).
-    """
-    from collections import Counter
+def print_output_stats(topic_config: dict, show_all: bool = False) -> int:
+    """Describe the current output file without modifying anything."""
+    topic = topic_config["name"]
+    filter_keywords = topic_config["filter_keywords"]
+    output_file = get_output_file(topic)
 
     if show_all:
         # Show stats for ALL raw collected data (before filtering)
-        urls_entries = load_all_from_raw("urls.jsonl")
-        descriptions_entries = load_all_from_raw("descriptions.jsonl")
+        urls_entries = load_all_from_raw(topic, "urls.jsonl")
+        articles_entries = load_all_from_raw(topic, "articles.jsonl")
 
         if not urls_entries:
-            print("No raw data found in raw/<date>/urls.jsonl", file=sys.stderr)
+            print(f"No raw data found for topic '{topic}'", file=sys.stderr)
             return 2
 
-        # Build URL index for joining
-        desc_by_url = build_url_index(descriptions_entries)
+        desc_by_url = build_url_index(articles_entries)
 
-        print(f"Raw data stats (ALL collected items, before filtering)")
+        print(f"Raw data stats for topic '{topic}' (ALL collected items, before filtering)")
         print(f"=" * 60)
         print(f"Total URLs collected: {len(urls_entries)}")
-        print(f"Total descriptions scraped: {len(descriptions_entries)}")
+        print(f"Total articles scraped: {len(articles_entries)}")
 
-        # Count successful descriptions
-        success_count = sum(1 for e in descriptions_entries if e.get("success", False))
+        success_count = sum(1 for e in articles_entries if e.get("success", False))
         print(f"Successful scrapes: {success_count}")
 
-        # Stats by outlet and date from urls.jsonl (raw MediaCloud data)
         media_counts = Counter(e.get("media_url", "unknown") for e in urls_entries)
-        date_counts = Counter(e.get("publish_date", "unknown")[:10] if e.get("publish_date") else "unknown"
-                              for e in urls_entries)
+        date_counts = Counter(
+            e.get("publish_date", "unknown")[:10] if e.get("publish_date") else "unknown"
+            for e in urls_entries
+        )
 
-        # Also count what would be filtered
         english_count = sum(1 for e in urls_entries if e.get("language", "").lower() == "en")
         non_english_count = len(urls_entries) - english_count
 
-        # Count Gaza-related (need to join with descriptions for title/description)
-        gaza_count = 0
+        topic_related_count = 0
         for entry in urls_entries:
             url = entry.get("url")
             desc_entry = desc_by_url.get(url, {})
             combined = {**entry, **desc_entry}
-            if is_gaza_related(combined):
-                gaza_count += 1
+            if is_topic_related(combined, filter_keywords):
+                topic_related_count += 1
 
         print(f"\nFilter breakdown:")
         print(f"   English language: {english_count}")
         print(f"   Non-English: {non_english_count}")
-        print(f"   Gaza-related (of all): {gaza_count}")
+        print(f"   Topic-related (of all): {topic_related_count}")
 
         print("\nStories per media outlet (ALL collected):")
         for media, count in sorted(media_counts.items(), key=lambda x: (-x[1], x[0])):
@@ -209,12 +285,12 @@ def print_output_stats(show_all: bool = False) -> int:
         return 0
 
     # Default: show stats for cleaned output file
-    if not OUTPUT_FILE.exists():
-        print(f"Not found: {OUTPUT_FILE}", file=sys.stderr)
+    if not output_file.exists():
+        print(f"Not found: {output_file}", file=sys.stderr)
         return 2
 
-    final_entries = load_jsonl(OUTPUT_FILE)
-    print(f"Output: {OUTPUT_FILE} ({len(final_entries)} entries)")
+    final_entries = load_jsonl(output_file)
+    print(f"Output: {output_file} ({len(final_entries)} entries)")
 
     media_counts = Counter(e.get("media_url", "unknown") for e in final_entries)
     date_counts = Counter(e.get("publish_date", "unknown") for e in final_entries)
@@ -232,22 +308,51 @@ def print_output_stats(show_all: bool = False) -> int:
 
 def main():
     args = parse_args()
+
+    if args.list_topics:
+        list_topics()
+        return
+
+    # Get topic config
+    try:
+        topic_config = get_topic_config(args.topic)
+    except ValueError as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        list_topics()
+        sys.exit(1)
+
+    topic = topic_config["name"]
+    filter_keywords = topic_config["filter_keywords"]
+    output_file = get_output_file(topic)
+    tmp_output_file = get_tmp_output_file(topic)
+
     if args.stats or args.dry_run:
-        raise SystemExit(print_output_stats(show_all=args.all))
+        raise SystemExit(print_output_stats(topic_config, show_all=args.all))
 
     start_time = datetime.now()
     logger = setup_logging()
 
     logger.info("=" * 60)
-    logger.info("RUN STARTED")
+    logger.info(f"RUN STARTED - Topic: {topic}")
+    if args.append:
+        logger.info("APPEND MODE: keeping existing clean file entries")
+    else:
+        logger.info("REGENERATE MODE: rebuilding clean file from scratch")
 
     problems = []
 
-    # Load all data sources from raw/<date>/ directories
+    # Ensure output directory exists
+    CLEAN_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Load all data sources from raw/{topic}/{date}/ directories
     try:
-        descriptions_entries = load_all_from_raw("descriptions.jsonl")
-        urls_entries = load_all_from_raw("urls.jsonl")
-        existing_entries = load_jsonl(OUTPUT_FILE)
+        articles_entries = load_all_from_raw(topic, "articles.jsonl")
+        urls_entries = load_all_from_raw(topic, "urls.jsonl")
+        # Default: regenerate from scratch. --append: keep existing entries
+        if args.append:
+            existing_entries = load_jsonl(output_file)
+        else:
+            existing_entries = []
     except Exception as e:
         logger.error(f"Failed to load input files: {e}")
         raise
@@ -257,20 +362,20 @@ def main():
     existing_urls = {entry["url"] for entry in existing_entries if "url" in entry}
 
     # Stats
-    count_descriptions = len(descriptions_entries)
+    count_articles = len(articles_entries)
     count_urls = len(urls_entries)
     count_existing = len(existing_entries)
     count_added = 0
     count_skipped_not_success = 0
     count_skipped_already_exists = 0
     count_skipped_non_english = 0
-    count_skipped_not_gaza = 0
+    count_skipped_not_topic = 0
     missing_urls = []
 
-    # Process descriptions
+    # Process articles
     new_entries = []
 
-    for entry in descriptions_entries:
+    for entry in articles_entries:
         # Only process successful scrapes
         if not entry.get("success", False):
             count_skipped_not_success += 1
@@ -298,13 +403,17 @@ def main():
             count_skipped_non_english += 1
             continue
 
-        # Filter out non-Gaza-related entries
-        if not is_gaza_related(entry):
-            count_skipped_not_gaza += 1
+        # Filter out non-topic-related entries
+        if not is_topic_related(entry, filter_keywords):
+            count_skipped_not_topic += 1
             continue
 
         # Build cleaned entry with specified key order
         combined = {**urls_data, **entry}  # entry overwrites urls_data for shared keys
+        
+        # Ensure my_topic is set
+        combined["my_topic"] = topic
+        
         cleaned_entry = {k: combined[k] for k in OUTPUT_KEY_ORDER if k in combined}
 
         new_entries.append(cleaned_entry)
@@ -317,11 +426,11 @@ def main():
             "\n" + "=" * 80 + "\n"
             "CRITICAL ERROR\n"
             "=" * 80 + "\n"
-            f"Found {len(missing_urls)} URL(s) in descriptions.jsonl that DO NOT EXIST in urls.jsonl!\n"
+            f"Found {len(missing_urls)} URL(s) in articles.jsonl that DO NOT EXIST in urls.jsonl!\n"
             "This is a data integrity issue that must be resolved.\n\n"
             "Missing URLs:\n"
         )
-        for url in missing_urls[:10]:  # Show first 10
+        for url in missing_urls[:10]:
             error_msg += f"  - {url}\n"
         if len(missing_urls) > 10:
             error_msg += f"  ... and {len(missing_urls) - 10} more\n"
@@ -339,12 +448,13 @@ def main():
     duration = end_time - start_time
 
     # Log summary
-    logger.info(f"Input (descriptions): {count_descriptions} entries")
+    logger.info(f"Topic: {topic}")
+    logger.info(f"Input (articles): {count_articles} entries")
     logger.info(f"Input (urls): {count_urls} entries")
     logger.info(f"Output file (before run): {count_existing} entries")
     logger.info(f"Skipped (success=false): {count_skipped_not_success}")
     logger.info(f"Skipped (non-English): {count_skipped_non_english}")
-    logger.info(f"Skipped (not Gaza-related): {count_skipped_not_gaza}")
+    logger.info(f"Skipped (not topic-related): {count_skipped_not_topic}")
     logger.info(f"Skipped (already in output): {count_skipped_already_exists}")
     logger.info(f"Added to output: {count_added}")
     logger.info(f"Output file (after run): {count_existing + count_added} entries")
@@ -355,13 +465,14 @@ def main():
     logger.info("RUN COMPLETED")
 
     # Print summary to stdout
+    print(f"\nTopic: {topic}")
     print(f"Completed in {duration.total_seconds():.2f}s")
-    print(f"   - Entries in descriptions: {count_descriptions}")
+    print(f"   - Entries in articles: {count_articles}")
     print(f"   - Entries in urls: {count_urls}")
     print(f"   - Entries already in output: {count_existing}")
     print(f"   - Skipped (not successful): {count_skipped_not_success}")
     print(f"   - Skipped (non-English): {count_skipped_non_english}")
-    print(f"   - Skipped (not Gaza-related): {count_skipped_not_gaza}")
+    print(f"   - Skipped (not topic-related): {count_skipped_not_topic}")
     print(f"   - Skipped (already exists): {count_skipped_already_exists}")
     print(f"   - Added to output: {count_added}")
     print(f"   - Total in output now: {count_existing + count_added}")
@@ -370,12 +481,11 @@ def main():
         print("\nNo new entries to add.")
         return
 
-    # Write new entries (combine with existing, sort by date desc + URL hash for stable recency-first order)
+    # Write new entries (combine with existing, sort by date desc + URL hash)
     all_entries = existing_entries + new_entries
     all_entries.sort(key=entry_sort_key)
 
     # Print stories per media_url and date
-    from collections import Counter
     media_counts = Counter(e.get("media_url", "unknown") for e in all_entries)
     date_counts = Counter(e.get("publish_date", "unknown") for e in all_entries)
 
@@ -390,20 +500,32 @@ def main():
     # Prompt for integration (or auto-integrate)
     print("\n" + "=" * 50)
 
-    if args.auto:
-        response = "y"
+    if args.no_write:
+        print("No-write mode - no changes written.")
     else:
-        response = input("Write to MINA's knowledge base? (y/n): ").strip().lower()
-
-    if response != "y":
-        print("Integration skipped. No changes made.")
-    else:
-        with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+        # Get dates collected for meta header
+        dates = get_dates_collected(topic)
+        meta = create_meta_header(topic, len(all_entries), dates)
+        
+        # Write to output file with meta header
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(json.dumps(meta, ensure_ascii=False) + "\n")
             for entry in all_entries:
                 f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        print(f"Written to: {output_file}")
 
-        print(f"Written to: {OUTPUT_FILE}")
-        print(f"   ({len(all_entries)} entries)")
+        # Also write to /tmp for gist upload (same content)
+        with open(tmp_output_file, "w", encoding="utf-8") as f:
+            f.write(json.dumps(meta, ensure_ascii=False) + "\n")
+            for entry in all_entries:
+                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        print(f"Written to: {tmp_output_file} (for gist upload)")
+        
+        # Also combine raw files for gist upload
+        combined_raw = combine_raw_files(topic)
+        print(f"Combined raw: {combined_raw}")
+        
+        print(f"   ({len(all_entries)} clean entries)")
 
 
 if __name__ == "__main__":

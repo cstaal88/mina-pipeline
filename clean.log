@@ -24,3 +24,78 @@
 2026-01-23 13:34:30 | INFO | Output file (after run): 406 entries
 2026-01-23 13:34:30 | INFO | Duration: 0.02 seconds
 2026-01-23 13:34:30 | INFO | RUN COMPLETED
+2026-01-25 23:26:11 | INFO | ============================================================
+2026-01-25 23:26:11 | INFO | RUN STARTED - Topic: minneapolis-ice
+2026-01-25 23:26:11 | INFO | REGENERATE MODE: rebuilding clean file from scratch
+2026-01-25 23:26:11 | INFO | Topic: minneapolis-ice
+2026-01-25 23:26:11 | INFO | Input (articles): 355 entries
+2026-01-25 23:26:11 | INFO | Input (urls): 355 entries
+2026-01-25 23:26:11 | INFO | Output file (before run): 0 entries
+2026-01-25 23:26:11 | INFO | Skipped (success=false): 0
+2026-01-25 23:26:11 | INFO | Skipped (non-English): 7
+2026-01-25 23:26:11 | INFO | Skipped (not topic-related): 48
+2026-01-25 23:26:11 | INFO | Skipped (already in output): 0
+2026-01-25 23:26:11 | INFO | Added to output: 300
+2026-01-25 23:26:11 | INFO | Output file (after run): 300 entries
+2026-01-25 23:26:11 | INFO | Duration: 0.00 seconds
+2026-01-25 23:26:11 | INFO | RUN COMPLETED
+2026-01-25 23:54:52 | INFO | ============================================================
+2026-01-25 23:54:52 | INFO | RUN STARTED - Topic: greenland-trump
+2026-01-25 23:54:52 | INFO | REGENERATE MODE: rebuilding clean file from scratch
+2026-01-25 23:54:52 | INFO | Topic: greenland-trump
+2026-01-25 23:54:52 | INFO | Input (articles): 76 entries
+2026-01-25 23:54:52 | INFO | Input (urls): 76 entries
+2026-01-25 23:54:52 | INFO | Output file (before run): 0 entries
+2026-01-25 23:54:52 | INFO | Skipped (success=false): 0
+2026-01-25 23:54:52 | INFO | Skipped (non-English): 0
+2026-01-25 23:54:52 | INFO | Skipped (not topic-related): 22
+2026-01-25 23:54:52 | INFO | Skipped (already in output): 0
+2026-01-25 23:54:52 | INFO | Added to output: 54
+2026-01-25 23:54:52 | INFO | Output file (after run): 54 entries
+2026-01-25 23:54:52 | INFO | Duration: 0.00 seconds
+2026-01-25 23:54:52 | INFO | RUN COMPLETED
+2026-01-26 00:57:17 | INFO | ============================================================
+2026-01-26 00:57:17 | INFO | RUN STARTED - Topic: minneapolis-ice
+2026-01-26 00:57:17 | INFO | REGENERATE MODE: rebuilding clean file from scratch
+2026-01-26 00:57:17 | INFO | Topic: minneapolis-ice
+2026-01-26 00:57:17 | INFO | Input (articles): 355 entries
+2026-01-26 00:57:17 | INFO | Input (urls): 355 entries
+2026-01-26 00:57:17 | INFO | Output file (before run): 0 entries
+2026-01-26 00:57:17 | INFO | Skipped (success=false): 0
+2026-01-26 00:57:17 | INFO | Skipped (non-English): 7
+2026-01-26 00:57:17 | INFO | Skipped (not topic-related): 48
+2026-01-26 00:57:17 | INFO | Skipped (already in output): 0
+2026-01-26 00:57:17 | INFO | Added to output: 300
+2026-01-26 00:57:17 | INFO | Output file (after run): 300 entries
+2026-01-26 00:57:17 | INFO | Duration: 0.00 seconds
+2026-01-26 00:57:17 | INFO | RUN COMPLETED
+2026-01-26 01:10:23 | INFO | ============================================================
+2026-01-26 01:10:23 | INFO | RUN STARTED - Topic: greenland-trump
+2026-01-26 01:10:23 | INFO | REGENERATE MODE: rebuilding clean file from scratch
+2026-01-26 01:10:23 | INFO | Topic: greenland-trump
+2026-01-26 01:10:23 | INFO | Input (articles): 76 entries
+2026-01-26 01:10:23 | INFO | Input (urls): 76 entries
+2026-01-26 01:10:23 | INFO | Output file (before run): 0 entries
+2026-01-26 01:10:23 | INFO | Skipped (success=false): 0
+2026-01-26 01:10:23 | INFO | Skipped (non-English): 0
+2026-01-26 01:10:23 | INFO | Skipped (not topic-related): 22
+2026-01-26 01:10:23 | INFO | Skipped (already in output): 0
+2026-01-26 01:10:23 | INFO | Added to output: 54
+2026-01-26 01:10:23 | INFO | Output file (after run): 54 entries
+2026-01-26 01:10:23 | INFO | Duration: 0.00 seconds
+2026-01-26 01:10:23 | INFO | RUN COMPLETED
+2026-01-26 09:27:34 | INFO | ============================================================
+2026-01-26 09:27:34 | INFO | RUN STARTED - Topic: minneapolis-ice
+2026-01-26 09:27:34 | INFO | REGENERATE MODE: rebuilding clean file from scratch
+2026-01-26 09:27:34 | INFO | Topic: minneapolis-ice
+2026-01-26 09:27:34 | INFO | Input (articles): 5103 entries
+2026-01-26 09:27:34 | INFO | Input (urls): 5103 entries
+2026-01-26 09:27:34 | INFO | Output file (before run): 0 entries
+2026-01-26 09:27:34 | INFO | Skipped (success=false): 60
+2026-01-26 09:27:34 | INFO | Skipped (non-English): 74
+2026-01-26 09:27:34 | INFO | Skipped (not topic-related): 1899
+2026-01-26 09:27:34 | INFO | Skipped (already in output): 0
+2026-01-26 09:27:34 | INFO | Added to output: 3070
+2026-01-26 09:27:34 | INFO | Output file (after run): 3070 entries
+2026-01-26 09:27:34 | INFO | Duration: 0.05 seconds
+2026-01-26 09:27:34 | INFO | RUN COMPLETED
