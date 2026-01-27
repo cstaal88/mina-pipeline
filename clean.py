@@ -49,6 +49,19 @@ TMP_OUTPUT_DIR = Path("/tmp")
 # Keys to retain in final output (in order)
 OUTPUT_KEY_ORDER = ["media_url", "title", "description", "publish_date", "url", "my_topic"]
 
+# Max words for description truncation
+MAX_DESCRIPTION_WORDS = 50
+
+
+def truncate_description(text: str, max_words: int = MAX_DESCRIPTION_WORDS) -> str:
+    """Truncate description to first N words, adding '...' if truncated."""
+    if not text:
+        return text
+    words = text.split()
+    if len(words) <= max_words:
+        return text
+    return " ".join(words[:max_words]) + "..."
+
 
 def get_raw_dir(topic: str) -> Path:
     """Get raw directory for a topic."""
@@ -488,6 +501,10 @@ def main():
         
         # Ensure my_topic is set
         combined["my_topic"] = topic
+        
+        # Truncate long descriptions (e.g., Daily Wire puts full article in meta description)
+        if combined.get("description"):
+            combined["description"] = truncate_description(combined["description"])
         
         cleaned_entry = {k: combined[k] for k in OUTPUT_KEY_ORDER if k in combined}
 
