@@ -20,6 +20,7 @@ concurrency:
 
 jobs:
   fetch-and-update-gist:
+    if: false  # TEMPORARILY DISABLED - re-enable after fixing gist data
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
