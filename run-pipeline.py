@@ -206,6 +206,8 @@ Examples:
                         help="List available topics and exit")
     parser.add_argument("--push-gist", action="store_true",
                         help="Push results to gist after completion (requires gh CLI)")
+    parser.add_argument("--auto", action="store_true",
+                        help="No interactive prompts (for cron/GitHub Actions)")
     args = parser.parse_args(argv)
 
     if args.list_topics:
