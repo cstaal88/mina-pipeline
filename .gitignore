@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+.env
+
+# Logs
+*.log
+
+# Data files (tracked in gists, not git)
+raw/
+clean/
+stats-output/
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/

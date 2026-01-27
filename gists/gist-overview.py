@@ -85,15 +85,9 @@ def extract_domain(url: str) -> str:
 
 
 def extract_date(entry: dict, is_raw: bool = False) -> str:
-    """Extract date from entry, handling raw vs clean data."""
-    if is_raw:
-        # Raw data: use scraped_at (ISO timestamp) -> extract date part
-        scraped_at = entry.get('scraped_at', '')
-        if scraped_at:
-            return scraped_at[:10]  # "2026-01-25T22:53:37" -> "2026-01-25"
-        return 'unknown'
-    else:
-        return entry.get('publish_date', 'unknown')
+    """Extract date from entry - both raw and clean now have publish_date."""
+    # Both raw and clean have publish_date (raw was merged from urls.jsonl)
+    return entry.get('publish_date', 'unknown')
 
 
 def extract_media(entry: dict, is_raw: bool = False) -> str:

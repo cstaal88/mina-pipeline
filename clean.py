@@ -142,20 +142,41 @@ def create_meta_header(topic: str, record_count: int, dates_collected: list[str]
 
 
 def combine_raw_files(topic: str) -> Path:
-    """Combine all raw articles into a single file with meta header."""
+    """Combine all raw data into a single file with meta header.
+    
+    Merges urls.jsonl (publish_date, media_url, language, etc.) with
+    articles.jsonl (description, success, etc.) by URL to create
+    complete self-contained records.
+    """
     articles = load_all_from_raw(topic, "articles.jsonl")
+    urls = load_all_from_raw(topic, "urls.jsonl")
     dates = get_dates_collected(topic)
+    
+    # Build URL index from urls.jsonl
+    urls_by_url = build_url_index(urls)
+    
+    # Merge: start with urls data, overlay articles data
+    combined_records = []
+    for article in articles:
+        url = article.get("url")
+        if not url:
+            continue
+        
+        # Merge: urls fields first, then article fields (article overwrites shared keys like 'title')
+        url_data = urls_by_url.get(url, {})
+        merged = {**url_data, **article}
+        combined_records.append(merged)
     
     combined_file = get_combined_raw_file(topic)
     
     with open(combined_file, "w", encoding="utf-8") as f:
         # Write meta header first
-        meta = create_meta_header(topic, len(articles), dates)
+        meta = create_meta_header(topic, len(combined_records), dates)
         f.write(json.dumps(meta, ensure_ascii=False) + "\n")
         
-        # Write all articles
-        for article in articles:
-            f.write(json.dumps(article, ensure_ascii=False) + "\n")
+        # Write all merged records
+        for record in combined_records:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
     
     return combined_file
 

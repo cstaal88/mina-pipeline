@@ -78,21 +78,32 @@ jobs:
                 ;;
             esac
             
-            # Download existing clean data
+            # Download existing raw data (the accumulating archive)
+            RAW_DIR="raw/${TOPIC}"
+            mkdir -p "$RAW_DIR"
+            RAW_COMBINED="$RAW_DIR/_combined.jsonl"
+            if gh gist view "$GIST_ID" -f "raw.jsonl" > "$RAW_COMBINED" 2>/dev/null; then
+              EXISTING_RAW=$(wc -l < "$RAW_COMBINED")
+              echo "Downloaded $EXISTING_RAW existing raw records"
+            else
+              echo "No existing raw data in gist"
+            fi
+            
+            # Clean dir starts empty - will be regenerated from raw
             CLEAN_DIR="clean"
             mkdir -p "$CLEAN_DIR"
-            if gh gist view "$GIST_ID" -f "clean.jsonl" > "$CLEAN_DIR/articles-${TOPIC}.jsonl" 2>/dev/null; then
-              EXISTING=$(wc -l < "$CLEAN_DIR/articles-${TOPIC}.jsonl")
-              echo "Downloaded $EXISTING existing clean records"
-            else
-              echo "No existing clean data"
-              touch "$CLEAN_DIR/articles-${TOPIC}.jsonl"
-            fi
+            rm -f "$CLEAN_DIR/articles-${TOPIC}.jsonl"
             
             # Run pipeline
             python3 run-pipeline.py --topic "$TOPIC" --auto || echo "Pipeline for $TOPIC exited with code $?"
             
-            # Upload results
+            # Upload raw.jsonl (the full archive)
+            if [ -f "$RAW_COMBINED" ]; then
+              echo "Uploading raw.jsonl to gist..."
+              gh gist edit "$GIST_ID" -f "raw.jsonl" "$RAW_COMBINED"
+            fi
+            
+            # Upload clean.jsonl (regenerated from raw)
             CLEAN_FILE="$CLEAN_DIR/articles-${TOPIC}.jsonl"
             if [ -f "$CLEAN_FILE" ]; then
               echo "Uploading clean.jsonl to gist..."
