@@ -14,6 +14,7 @@ import json
 import os
 import sys
 from collections import Counter
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
@@ -105,22 +106,37 @@ def analyze_entries(entries: list[dict], label: str, is_raw: bool = False) -> di
         return {
             'count': 0,
             'date_range': {'earliest': None, 'latest': None},
-            'top_dates': {},
-            'top_media': {},
+            'date_counts': {},
+            'all_media': [],
             'samples': [],
         }
-
     dates = [extract_date(e, is_raw) for e in entries]
     media = [extract_media(e, is_raw) for e in entries]
 
     date_counts = Counter(dates)
     media_counts = Counter(media)
 
-    # Sort dates
-    valid_dates = [d for d in dates if d != 'unknown']
+    # Compute per-media summary lengths (words)
+    media_word_lengths: dict[str, list[int]] = defaultdict(list)
+    for e in entries:
+        m = extract_media(e, is_raw)
+        desc = (e.get('description') or '')
+        word_len = len(desc.split()) if desc else 0
+        media_word_lengths[m].append(word_len)
+
+    media_stats: list[tuple[str, int, float]] = []
+    for m, cnt in media_counts.items():
+        lengths = media_word_lengths.get(m, [])
+        mean_words = float(sum(lengths) / len(lengths)) if lengths else 0.0
+        media_stats.append((m, cnt, mean_words))
+    # sort by count desc
+    media_stats.sort(key=lambda x: -x[1])
+
+    # Sort dates (exclude 'unknown')
+    valid_dates = sorted([d for d in date_counts.keys() if d and d != 'unknown'])
     date_range = {
-        'earliest': min(valid_dates) if valid_dates else None,
-        'latest': max(valid_dates) if valid_dates else None,
+        'earliest': valid_dates[0] if valid_dates else None,
+        'latest': valid_dates[-1] if valid_dates else None,
     }
 
     # Sample records (first 1)
@@ -129,8 +145,8 @@ def analyze_entries(entries: list[dict], label: str, is_raw: bool = False) -> di
     return {
         'count': len(entries),
         'date_range': date_range,
-        'top_dates': dict(date_counts.most_common(5)),
-        'all_media': dict(media_counts.most_common()),  # All media sources
+        'date_counts': dict(date_counts),
+        'all_media': media_stats,  # List of (media, count, mean_words)
         'samples': samples,
     }
 
@@ -150,32 +166,90 @@ def print_topic_overview(topic_name: str, gist_id: str):
     raw_stats = analyze_entries(raw_entries, 'Raw', is_raw=True)
     clean_stats = analyze_entries(clean_entries, 'Clean', is_raw=False)
 
-    # Print stats
+    # Print stats (RAW)
     print(f"\nRAW DATA (unfiltered scraped articles):")
     print(f"  Total entries: {raw_stats['count']}")
     if raw_stats['date_range']['earliest']:
         print(f"  Date range: {raw_stats['date_range']['earliest']} to {raw_stats['date_range']['latest']}")
-    print(f"  Top dates: {raw_stats['top_dates']}")
-    print(f"  Media sources ({len(raw_stats['all_media'])}): {raw_stats['all_media']}")
 
+    # Date histogram (ASCII bars)
+    if raw_stats.get('date_counts'):
+        counts = raw_stats['date_counts']
+        # Build ordered list of dates
+        dates_sorted = sorted(d for d in counts.keys() if d and d != 'unknown')
+        if dates_sorted:
+            max_count = max(counts[d] for d in dates_sorted)
+            bar_width = 40
+            print("\n  Stories per date:")
+            for d in dates_sorted:
+                c = counts[d]
+                length = int((c / max_count) * bar_width) if max_count > 0 else 0
+                # Use full block characters for denser bars
+                bar_char = '█'
+                bar = bar_char * max(1, length)
+                print(f"    {d} | {bar:<{bar_width}} {c}")
+
+    # Media sources: stories per outlet and mean summary length (all outlets)
+    media_list = raw_stats.get('all_media', [])
+    if media_list:
+        bar_width = 30
+        max_cnt = max(c for _, c, _ in media_list) if media_list else 0
+        print("\n  Stories per outlet:")
+        for m, c, _ in media_list:
+            length = int((c / max_cnt) * bar_width) if max_cnt > 0 else 0
+            bar = '█' * max(1, length)
+            print(f"    {m:20} | {bar:<{bar_width}} {c}")
+
+        max_mean = max(mean for _, _, mean in media_list) if media_list else 0.0
+        print("\n  Mean summary length (words) per outlet:")
+        for m, _, mean in media_list:
+            length = int((mean / max_mean) * bar_width) if max_mean > 0 else 0
+            bar = '█' * max(1, length)
+            print(f"    {m:20} | {bar:<{bar_width}} {mean:.0f}")
+
+    # Print stats (CLEAN)
     print(f"\nCLEAN DATA (filtered articles):")
     print(f"  Total entries: {clean_stats['count']}")
     if clean_stats['date_range']['earliest']:
         print(f"  Date range: {clean_stats['date_range']['earliest']} to {clean_stats['date_range']['latest']}")
-    print(f"  Top dates: {clean_stats['top_dates']}")
-    print(f"  Media sources ({len(clean_stats['all_media'])}): {clean_stats['all_media']}")
 
-    # Cleaning effectiveness
+    # Clean date histogram
+    if clean_stats.get('date_counts'):
+        counts = clean_stats['date_counts']
+        dates_sorted = sorted(d for d in counts.keys() if d and d != 'unknown')
+        if dates_sorted:
+            max_count = max(counts[d] for d in dates_sorted)
+            bar_width = 40
+            print("\n  Stories per date (clean):")
+            for d in dates_sorted:
+                c = counts[d]
+                length = int((c / max_count) * bar_width) if max_count > 0 else 0
+                bar_char = '█'
+                bar = bar_char * max(1, length)
+                print(f"    {d} | {bar:<{bar_width}} {c}")
+
+    # Media sources (top 10)
+    media_list = clean_stats.get('all_media', [])
+    if media_list:
+        bar_width = 30
+        max_cnt = max(c for _, c, _ in media_list) if media_list else 0
+        print("\n  Stories per outlet (clean):")
+        for m, c, _ in media_list:
+            length = int((c / max_cnt) * bar_width) if max_cnt > 0 else 0
+            bar = '█' * max(1, length)
+            print(f"    {m:20} | {bar:<{bar_width}} {c}")
+
+        max_mean = max(mean for _, _, mean in media_list) if media_list else 0.0
+        print("\n  Mean summary length (words) per outlet (clean):")
+        for m, _, mean in media_list:
+            length = int((mean / max_mean) * bar_width) if max_mean > 0 else 0
+            bar = '█' * max(1, length)
+            print(f"    {m:20} | {bar:<{bar_width}} {mean:.0f}")
+
+    # Simple retention metric (no warnings)
     if raw_stats['count'] > 0:
         retention_rate = clean_stats['count'] / raw_stats['count'] * 100
-        print(f"\nCLEANING EFFECTIVENESS:")
-        print(f"  Retention rate: {retention_rate:.1f}% ({clean_stats['count']}/{raw_stats['count']})")
-        if retention_rate < 50:
-            print("  ⚠️  Low retention - check filter keywords or scraping success")
-        elif retention_rate > 90:
-            print("  ✅ High retention - filters may be too permissive")
-        else:
-            print("  ✅ Reasonable retention - filters working well")
+        print(f"\nCLEANING EFFECTIVENESS: Retention rate: {retention_rate:.1f}% ({clean_stats['count']}/{raw_stats['count']})")
 
     # Sample records
     if clean_stats['samples']:
@@ -197,6 +271,8 @@ def main():
     for topic_name, config in TOPICS.items():
         gist_id = config['gist_id']
         print_topic_overview(topic_name, gist_id)
+        # Add spacing between topics for readability
+        print("\n")
 
 
 
