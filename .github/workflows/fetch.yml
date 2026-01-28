@@ -94,8 +94,8 @@ jobs:
             mkdir -p "$CLEAN_DIR"
             rm -f "$CLEAN_DIR/articles-${TOPIC}.jsonl"
             
-            # Run pipeline
-            python3 run-pipeline.py --topic "$TOPIC" --auto || echo "Pipeline for $TOPIC exited with code $?"
+            # Run pipeline (only fetch today's data, backlog is in gist)
+            python3 run-pipeline.py --topic "$TOPIC" --auto --days 1 || echo "Pipeline for $TOPIC exited with code $?"
             
             # Upload raw.jsonl (the full archive)
             if [ -f "$RAW_COMBINED" ]; then
