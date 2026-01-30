@@ -66,7 +66,7 @@ TOPICS = {
 }
 
 # Which topics to process (list of keys, or None for all)
-ACTIVE_TOPICS = ["minneapolis-ice"]
+ACTIVE_TOPICS = None
 
 # ─────────────────────────────────────────────────────────────────────────────
 # FILE PATHS
