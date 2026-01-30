@@ -1,0 +1,56 @@
+# .github/workflows/rss-pipeline.yml
+# RSS-based news collection pipeline
+#
+# Triggered via cron-job.org - runs daily
+# Fetches RSS feeds, filters by topic, uploads to gists
+
+name: "RSS News Pipeline"
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: rss-fetch
+  cancel-in-progress: true
+
+jobs:
+  fetch-and-update-gist:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      GH_TOKEN: ${{ secrets.GIST_PAT }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install xmltodict
+
+      - name: Fetch RSS feeds
+        run: |
+          echo "=== Fetching RSS feeds ==="
+          cd getnews
+          python3 fetch-raw.py
+
+      - name: Process topics and push to gists
+        run: |
+          echo "=== Processing topics ==="
+          cd getnews
+          python3 clean.py --push
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "================================================"
+          echo "RSS Pipeline Completed"
+          echo "Date: $(date -u +%Y-%m-%d' '%H:%M' UTC')"
+          echo "================================================"

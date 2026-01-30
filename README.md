@@ -1,25 +1,34 @@
 # MINA News Data Pipeline
 
-A unified pipeline for collecting and cleaning news data from MediaCloud.
-Supports multiple topics with automatic backfill and incremental collection.
+Two pipelines for collecting news:
+- **getnews/** - RSS-based collection (primary, runs daily)
+- **mediacloud/** - MediaCloud API collection (for historical backfill)
 
-## Quick Start
+## Quick Start (RSS Pipeline)
 
 ```bash
+cd getnews
+
+# Fetch stories from all RSS feeds
+python3 fetch-raw.py
+
+# Filter by topic and format for output
+python3 clean.py minneapolis-ice
+
+# Push to gist (after testing)
+python3 clean.py minneapolis-ice --push
+```
+
+## Quick Start (MediaCloud Pipeline)
+
+```bash
+cd mediacloud
+
 # List available topics
 python3 run-pipeline.py --list-topics
 
-# Run full pipeline for default topic
-python3 run-pipeline.py
-
-# Run for specific topic
+# Run full pipeline for specific topic
 python3 run-pipeline.py --topic minneapolis-ice
-
-# Collection only (skip cleaning)
-python3 run-pipeline.py --topic minneapolis-ice --collect-only
-
-# Cleaning only
-python3 run-pipeline.py --topic minneapolis-ice --clean-only
 
 # Automated mode (no prompts)
 python3 run-pipeline.py --topic minneapolis-ice --auto
@@ -29,28 +38,27 @@ python3 run-pipeline.py --topic minneapolis-ice --auto
 
 ```
 mina-pipeline/
-├── run-pipeline.py         # Main entry point
-├── config.py               # Topic configurations (queries, outlets, gist IDs)
-├── manifest.py             # Manifest utilities for tracking coverage
-├── clean.py                # Data cleaning script
-├── collect/
-│   ├── mcloud-fetch-urls.py    # Fetch URLs from MediaCloud
-│   ├── scrape-articles.py      # Scrape article metadata
-│   └── mcloud_setup.py         # MediaCloud client setup
-├── raw/
-│   └── {topic}/
-│       └── {date}/
-│           ├── urls.jsonl      # MediaCloud URLs
-│           └── articles.jsonl  # Scraped article metadata
-├── clean/
-│   └── articles-{topic}.jsonl  # Cleaned output
+├── getnews/                    # RSS-based pipeline (primary)
+│   ├── config.py               # Outlets, topics, keywords
+│   ├── fetch-raw.py            # Fetch from RSS feeds
+│   └── clean.py                # Filter and upload to gists
+├── mediacloud/                 # MediaCloud pipeline (backfill)
+│   ├── run-pipeline.py         # Main entry point
+│   ├── config.py               # Topic configurations
+│   ├── clean.py                # Data cleaning
+│   ├── manifest.py             # Coverage tracking
+│   └── collect/                # MediaCloud fetch scripts
+│       ├── mcloud-fetch-urls.py
+│       ├── scrape-articles.py
+│       └── mcloud_setup.py
+├── gists/                      # Gist tools and docs
 └── .github/workflows/
     └── fetch.yml               # GitHub Actions workflow
 ```
 
 ## Topics
 
-Topics are configured in `config.py`. Each topic has:
+Topics are configured in `getnews/config.py` (RSS) and `mediacloud/config.py` (MediaCloud). Each topic has:
 - `start_date`: When to begin collecting (for backfills)
 - `query`: MediaCloud search query
 - `outlets`: News outlets to search
@@ -60,7 +68,7 @@ Topics are configured in `config.py`. Each topic has:
 
 ### Adding a New Topic
 
-1. Add topic configuration to `config.py`:
+1. Add topic configuration to both `getnews/config.py` and `mediacloud/config.py`:
    ```python
    TOPICS = {
        "my-new-topic": {

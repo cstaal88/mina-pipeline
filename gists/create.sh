@@ -1,14 +1,30 @@
 #!/bin/bash
+# Create unified gist for RSS news pipeline
+# Run this once to create the gist, then add the ID to getnews/config.py
 
-# - - - - - - - - - - - - Create minneapolis-ice gist with both files
-echo '{}' > /tmp/raw.jsonl
-echo '{}' > /tmp/clean.jsonl
-gh gist create --filename "raw.jsonl" /tmp/raw.jsonl --filename "clean.jsonl" /tmp/clean.jsonl -d "minneapolis-ice news data"
-#minneapolis: https://gist.githubusercontent.com/cstaal88/839f9f409d36d715d277095886ced536/raw/clean.jsonl
+set -e
+
+# Create placeholder files
+TMPDIR=$(mktemp -d)
+echo '{"_meta": true, "note": "placeholder"}' > "$TMPDIR/raw.jsonl"
+echo '{"_meta": true, "note": "placeholder"}' > "$TMPDIR/clean-minneapolis-ice.jsonl"
+echo '{"_meta": true, "note": "placeholder"}' > "$TMPDIR/clean-greenland-trump.jsonl"
+
+echo "Creating unified gist..."
+gh gist create \
+    "$TMPDIR/raw.jsonl" \
+    "$TMPDIR/clean-minneapolis-ice.jsonl" \
+    "$TMPDIR/clean-greenland-trump.jsonl" \
+    --desc "MINA RSS news data (unified)" \
+    --public
+
+echo ""
+echo "Copy the gist ID above and add it to getnews/config.py as GIST_ID"
+
+# Cleanup
+rm -rf "$TMPDIR"
 
 
-# - - - - - - - - - - - -  trump / greenland
-echo '{}' > /tmp/raw.jsonl
-echo '{}' > /tmp/clean.jsonl
-gh gist create --filename "raw.jsonl" /tmp/raw.jsonl --filename "clean.jsonl" /tmp/clean.jsonl -d "greenland-trump news data"
-#trump/ greenland: https://gist.githubusercontent.com/cstaal88/a046f4a9233ff2e499dfeb356e081d79/raw/clean.jsonl
+# - - - - - - - - - - - - OLD per-topic gists (for reference) - - - - - - - - -
+# minneapolis-ice: 839f9f409d36d715d277095886ced536
+# greenland-trump: a046f4a9233ff2e499dfeb356e081d79
