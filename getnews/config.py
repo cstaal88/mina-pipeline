@@ -175,7 +175,6 @@ OUTLETS = {
 EXCLUDED_FROM_CLEAN = [
     "usatoday.com",
 ]
-}
 
 # Which outlets to fetch (list of keys, or None for all)
 ACTIVE_OUTLETS = None
