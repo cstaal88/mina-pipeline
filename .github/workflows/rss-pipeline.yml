@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
-          python3 -m pip install xmltodict
+          python3 -m pip install xmltodict langdetect
 
       - name: Fetch RSS feeds
         run: |

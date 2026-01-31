@@ -20,6 +20,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from langdetect import detect, LangDetectException
+
 from config import (
     GIST_ID,
     TOPICS,
@@ -63,6 +65,21 @@ def matches_strict_keywords(story: dict, keywords: list[str]) -> bool:
         if summary.count(kw_lower) >= 2:
             return True
     return False
+
+
+def is_english(story: dict) -> bool:
+    """Check if story is in English using langdetect."""
+    title = story.get("title") or ""
+    summary = story.get("summary") or story.get("description") or ""
+    text = f"{title} {summary}".strip()
+
+    if len(text) < 20:  # Too short to detect reliably
+        return True  # Assume English if too short
+
+    try:
+        return detect(text) == "en"
+    except LangDetectException:
+        return True  # Assume English on detection failure
 
 
 def get_all_keywords() -> list[str]:
@@ -271,12 +288,13 @@ def main() -> int:
         keywords = TOPICS[topic_name]["keywords"]
 
         # Filter raw records for this topic (loose match first, then strict)
-        # Also exclude domains in EXCLUDED_FROM_CLEAN
+        # Also exclude domains in EXCLUDED_FROM_CLEAN and non-English content
         topic_raw = [r for r in all_raw if matches_keywords(r, keywords)]
         topic_clean = [
             r for r in topic_raw
             if matches_strict_keywords(r, keywords)
             and r.get("media_url", "") not in EXCLUDED_FROM_CLEAN
+            and is_english(r)
         ]
 
         clean_filename = f"clean-{topic_name}.jsonl"
