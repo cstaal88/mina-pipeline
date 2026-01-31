@@ -88,11 +88,12 @@ OUTLETS = {
         "domain": "abcnews.go.com",
         "url": "https://abcnews.go.com/abcnews/topstories",
     },
-    "ap": {
-        "name": "AP News",
-        "domain": "apnews.com",
-        "url": "https://apnews.com/index.rss",
-    },
+    # AP: Returns 401 on GitHub Actions (datacenter IP blocked)
+    # "ap": {
+    #     "name": "AP News",
+    #     "domain": "apnews.com",
+    #     "url": "https://apnews.com/index.rss",
+    # },
     "breitbart": {
         "name": "Breitbart",
         "domain": "breitbart.com",
@@ -118,21 +119,23 @@ OUTLETS = {
         "domain": "foxnews.com",
         "url": "https://moxie.foxnews.com/google-publisher/latest.xml",
     },
-    "msnbc": {
-        "name": "MSNBC",
-        "domain": "msnbc.com",
-        "url": "https://www.msnbc.com/feeds/latest",
-    },
+    # MSNBC: Returns error page instead of RSS on GitHub Actions
+    # "msnbc": {
+    #     "name": "MSNBC",
+    #     "domain": "msnbc.com",
+    #     "url": "https://www.msnbc.com/feeds/latest",
+    # },
     "nbc": {
         "name": "NBC News",
         "domain": "nbcnews.com",
         "url": "https://feeds.nbcnews.com/nbcnews/public/news",
     },
-    "newsmax": {
-        "name": "Newsmax",
-        "domain": "newsmax.com",
-        "url": "https://www.newsmax.com/rss/Newsfront/1/",
-    },
+    # Newsmax: Timeouts on GitHub Actions
+    # "newsmax": {
+    #     "name": "Newsmax",
+    #     "domain": "newsmax.com",
+    #     "url": "https://www.newsmax.com/rss/Newsfront/1/",
+    # },
     "npr": {
         "name": "NPR",
         "domain": "npr.org",
@@ -153,13 +156,25 @@ OUTLETS = {
         "domain": "washingtonpost.com",
         "url": "https://feeds.washingtonpost.com/rss/politics",
     },
-    "washtimes": {
-        "name": "Wash Times",
-        "domain": "washingtontimes.com",
-        "url": "https://www.washingtontimes.com/rss/headlines/news/politics/",
-    },
+    # Wash Times: Returns 403 on GitHub Actions
+    # "washtimes": {
+    #     "name": "Wash Times",
+    #     "domain": "washingtontimes.com",
+    #     "url": "https://www.washingtontimes.com/rss/headlines/news/politics/",
+    # },
     # WSJ: RSS feeds frozen since Jan 2025 - use MediaCloud for WSJ
     # USA Today: RSS feeds discontinued - redirects to homepage
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CLEAN FILE EXCLUSIONS
+# ─────────────────────────────────────────────────────────────────────────────
+# Domains to exclude from clean-*.jsonl files (but keep in raw.jsonl)
+# These may have historical data from MediaCloud that we don't want in clean output
+
+EXCLUDED_FROM_CLEAN = [
+    "usatoday.com",
+]
 }
 
 # Which outlets to fetch (list of keys, or None for all)

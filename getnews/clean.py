@@ -26,6 +26,7 @@ from config import (
     ACTIVE_TOPICS,
     RAW_STORIES_FILE,
     TEST_DIR,
+    EXCLUDED_FROM_CLEAN,
 )
 
 
@@ -270,8 +271,13 @@ def main() -> int:
         keywords = TOPICS[topic_name]["keywords"]
 
         # Filter raw records for this topic (loose match first, then strict)
+        # Also exclude domains in EXCLUDED_FROM_CLEAN
         topic_raw = [r for r in all_raw if matches_keywords(r, keywords)]
-        topic_clean = [r for r in topic_raw if matches_strict_keywords(r, keywords)]
+        topic_clean = [
+            r for r in topic_raw
+            if matches_strict_keywords(r, keywords)
+            and r.get("media_url", "") not in EXCLUDED_FROM_CLEAN
+        ]
 
         clean_filename = f"clean-{topic_name}.jsonl"
         local_clean = local_dir / clean_filename
