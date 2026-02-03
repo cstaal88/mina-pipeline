@@ -14,8 +14,8 @@ raw/
 clean/
 stats-output/
 
-# MediaCloud checkpoint files (should not be shared between local and CI)
-mediacloud/collect/.fetch-checkpoint-*.json
+# MediaCloud checkpoint files (deprecated - no longer used)
+mediacloud/collect/.fetch-checkpoint*.json
 
 # OS
 .DS_Store
