@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 """
-Filter stories and manage unified gist.
+Unified data processing pipeline for RSS and MediaCloud data.
 
 Usage:
     python clean.py                  # Process locally (no gist operations)
-    python clean.py --push           # Download from gist, append new, upload
+    python clean.py --push           # Download from gist, merge all sources, upload
 
 Flow:
-    1. Read tmp-news.json from fetch-raw.py
-    2. Filter stories matching ANY topic's keywords → raw.jsonl
-    3. For each topic: strict filter → clean-{topic}.jsonl
-    4. If --push: upload all files to unified gist
+    1. Read tmp-news.json from fetch-raw.py (RSS data)
+    2. Download existing raw.jsonl and mediacloud_raw.jsonl from gist  
+    3. Merge RSS + MediaCloud data → unified raw.jsonl
+    4. For each topic: strict filter → clean-{topic}.jsonl
+    5. If --push: upload unified raw.jsonl and all clean files
+
+Data Sources:
+    - RSS feeds (via fetch-raw.py) → immediate processing
+    - MediaCloud (via separate workflow) → merged from mediacloud_raw.jsonl
 """
 
 import hashlib
@@ -225,7 +230,7 @@ def main() -> int:
     # Format all stories for raw.jsonl
     formatted = [format_story_for_raw(s) for s in stories]
 
-    # Load existing raw data
+    # Load existing raw data (RSS + MediaCloud unified dataset)
     existing_raw = []
     local_dir = TEST_DIR / "unified"
     local_raw = local_dir / "raw.jsonl"
@@ -244,6 +249,23 @@ def main() -> int:
 
             existing_raw = parse_jsonl_content(content)
             print(f"  Existing records: {len(existing_raw)}")
+            
+        # Also download and merge MediaCloud data
+        print("\nDownloading MediaCloud data to merge...")
+        mediacloud_content = gist_download("mediacloud_raw.jsonl")
+        if mediacloud_content:
+            mediacloud_records = parse_jsonl_content(mediacloud_content)
+            print(f"  MediaCloud records to merge: {len(mediacloud_records)}")
+            
+            # Add source identifier to MediaCloud records if not present
+            for record in mediacloud_records:
+                if "collected_with" not in record:
+                    record["collected_with"] = "mediacloud"
+            
+            existing_raw.extend(mediacloud_records)
+            print(f"  Total after MediaCloud merge: {len(existing_raw)}")
+        else:
+            print("  No MediaCloud data found to merge")
     else:
         existing_raw = load_jsonl(local_raw)
         if existing_raw:

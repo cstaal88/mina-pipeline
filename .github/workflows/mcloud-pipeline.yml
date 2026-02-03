@@ -64,29 +64,18 @@ jobs:
             echo "Started: $(date -u +%Y-%m-%d' '%H:%M' UTC')"
             echo "========================================"
             
-            # Get gist ID for this topic
-            case "$TOPIC" in
-              "minneapolis-ice")
-                GIST_ID="839f9f409d36d715d277095886ced536"
-                ;;
-              "greenland-trump")
-                GIST_ID="a046f4a9233ff2e499dfeb356e081d79"
-                ;;
-              *)
-                echo "Unknown topic: $TOPIC - skipping"
-                continue
-                ;;
-            esac
+            # Use unified gist for all MediaCloud data
+            GIST_ID="16c75a94d276d2800a44e3c2437f40e4"
             
-            # Download existing raw data (the accumulating archive)
+            # Download existing mediacloud raw data (the accumulating archive)
             RAW_DIR="mediacloud/raw/${TOPIC}"
             mkdir -p "$RAW_DIR"
             RAW_COMBINED="$RAW_DIR/_combined.jsonl"
-            if gh gist view "$GIST_ID" -f "raw.jsonl" > "$RAW_COMBINED" 2>/dev/null; then
+            if gh gist view "$GIST_ID" -f "mediacloud_raw.jsonl" > "$RAW_COMBINED" 2>/dev/null; then
               EXISTING_RAW=$(wc -l < "$RAW_COMBINED")
-              echo "Downloaded $EXISTING_RAW existing raw records"
+              echo "Downloaded $EXISTING_RAW existing MediaCloud raw records"
             else
-              echo "No existing raw data in gist"
+              echo "No existing MediaCloud raw data in unified gist"
             fi
             
             # Clean dir starts empty - will be regenerated from raw
@@ -94,21 +83,21 @@ jobs:
             mkdir -p "$CLEAN_DIR"
             rm -f "$CLEAN_DIR/articles-${TOPIC}.jsonl"
             
-            # Run pipeline (only fetch today's data, backlog is in gist)
-            python3 mediacloud/run-pipeline.py --topic "$TOPIC" --auto --days 1 || echo "Pipeline for $TOPIC exited with code $?"
+            # Run pipeline (3-day window handles missed runs and reduces API calls)
+            python3 mediacloud/run-pipeline.py --topic "$TOPIC" --auto --days 3 || echo "Pipeline for $TOPIC exited with code $?"
             
-            # Upload raw.jsonl (the full archive)
+            # Upload mediacloud_raw.jsonl (the full archive) to unified gist
             if [ -f "$RAW_COMBINED" ]; then
-              echo "Uploading raw.jsonl to gist..."
-              gh gist edit "$GIST_ID" -f "raw.jsonl" "$RAW_COMBINED"
+              echo "Uploading mediacloud_raw.jsonl to unified gist..."
+              gh gist edit "$GIST_ID" -f "mediacloud_raw.jsonl" "$RAW_COMBINED"
             fi
             
-            # Upload clean.jsonl (regenerated from raw)
+            # Upload mediacloud_clean_{topic}.jsonl (regenerated from raw)
             CLEAN_FILE="$CLEAN_DIR/articles-${TOPIC}.jsonl"
             if [ -f "$CLEAN_FILE" ]; then
-              echo "Uploading clean.jsonl to gist..."
-              gh gist edit "$GIST_ID" -f "clean.jsonl" "$CLEAN_FILE"
-              echo "✓ Gist updated: https://gist.github.com/$GIST_ID"
+              echo "Uploading mediacloud_clean_${TOPIC}.jsonl to unified gist..."
+              gh gist edit "$GIST_ID" -f "mediacloud_clean_${TOPIC}.jsonl" "$CLEAN_FILE"
+              echo "✓ Unified gist updated: https://gist.github.com/$GIST_ID"
             fi
             
             echo "Completed: $TOPIC"
