@@ -1,0 +1,53 @@
+{
+  "gist_existing_entries": 6882,
+  "combined_total_entries": 2151,
+  "combined_unique_ids": 2151,
+  "to_add_by_id": 2033,
+  "skipped_by_id": 118,
+  "removed_from_gist": 0,
+  "gist_unique_urls": 6881,
+  "combined_unique_urls": 2151,
+  "url_overlap_count": 204,
+  "top_domains_for_adds": [
+    [
+      "www.cbsnews.com",
+      602
+    ],
+    [
+      "www.foxnews.com",
+      235
+    ],
+    [
+      "abcnews.go.com",
+      214
+    ],
+    [
+      "www.cnn.com",
+      214
+    ],
+    [
+      "www.nbcnews.com",
+      195
+    ],
+    [
+      "apnews.com",
+      140
+    ],
+    [
+      "nypost.com",
+      138
+    ],
+    [
+      "www.usatoday.com",
+      121
+    ],
+    [
+      "www.nytimes.com",
+      83
+    ],
+    [
+      "www.npr.org",
+      68
+    ]
+  ]
+}

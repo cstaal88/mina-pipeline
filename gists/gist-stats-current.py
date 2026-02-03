@@ -7,6 +7,8 @@ Overview of unified gist contents for MINA news data pipeline.
 
 Fetches and analyzes the raw.jsonl and clean-*.jsonl files from the unified gist,
 providing stats, samples, and evaluation of cleaning procedures.
+
+Can also analyze local files when passed as arguments.
 """
 
 import json
@@ -158,6 +160,39 @@ def print_media_stats(media_stats: list, bar_width: int = 30):
 
 def main():
     """Main function."""
+    # Check if local file provided
+    if len(sys.argv) > 1:
+        local_file = Path(sys.argv[1])
+        if not local_file.exists():
+            print(f"Error: File {local_file} not found")
+            return
+            
+        print("=" * 80)
+        print(f"MINA News Data Pipeline - Local File Analysis")
+        print(f"Generated: {datetime.now().isoformat()}")
+        print(f"File: {local_file}")
+        print("=" * 80)
+        
+        with open(local_file, 'r') as f:
+            content = f.read()
+        
+        # Analyze the local file as raw data
+        print(f"\n{'='*60}")
+        print("LOCAL FILE ANALYSIS")
+        print("=" * 60)
+        
+        entries = parse_jsonl(content)
+        stats = analyze_entries(entries, is_raw=True)
+        
+        print(f"\n  Total entries: {stats['count']}")
+        if stats['date_range'].get('earliest'):
+            print(f"  Date range: {stats['date_range']['earliest']} to {stats['date_range']['latest']}")
+
+        print_histogram("Stories per date", stats['date_counts'])
+        print_media_stats(stats['media_stats'])
+        return
+    
+    # Original gist analysis
     print("=" * 80)
     print("MINA News Data Pipeline - Unified Gist Overview")
     print(f"Generated: {datetime.now().isoformat()}")

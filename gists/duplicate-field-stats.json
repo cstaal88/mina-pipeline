@@ -1,0 +1,932 @@
+{
+  "total_urls": 86,
+  "num_urls_analyzed": 86,
+  "fields": {
+    "collected_at": {
+      "both_equal": 0,
+      "both_different": 0,
+      "only_mediacloud": 0,
+      "only_rss": 86,
+      "examples": []
+    },
+    "collected_with": {
+      "both_equal": 0,
+      "both_different": 0,
+      "only_mediacloud": 0,
+      "only_rss": 86,
+      "examples": []
+    },
+    "description": {
+      "both_equal": 36,
+      "both_different": 49,
+      "only_mediacloud": 1,
+      "only_rss": 0,
+      "examples": [
+        {
+          "url": "https://abcnews.go.com/US/5-year-liam-conejo-ramos-father-board-plane/story?id=129749784",
+          "mediacloud": "The child and his father spoke exclusively to ABC News after their release from an immigration detention center.",
+          "rss": "A federal judge on Saturday ordered that the pair be released."
+        },
+        {
+          "url": "https://nypost.com/2026/01/30/us-news/heres-what-doj-must-prove-to-convict-don-lemon/",
+          "mediacloud": "The Department of Justice will have to prove more than just Don Lemon's \"mere presence” at the church invasion in Minnesota to convict him, experts told The Post.",
+          "rss": "The Department of Justice will have to prove more than Don Lemon's \"mere presence” at the church invasion in Minnesota earlier this month if they hope to convict the former CNN host, experts told The Post."
+        },
+        {
+          "url": "https://nypost.com/2026/01/31/us-news/anti-ice-maidens-women-dominate-roster-of-radicals-tracking-minnesota-dhs/",
+          "mediacloud": "An organized group dubbed the “Community of Service,” provides alerts on ICE activity, schedules shifts for patrol routes around the city that are manned by buttoned-up professionals, a Walz-appointee and the wife of a local lawmaker.",
+          "rss": "A highly organized group of radicals, dubbed the “Community of Service,” provides alerts on ICE activity, schedules shifts for patrol routes around the city that are manned by buttoned-up professionals, a Walz-appointee and the wife of a local lawmaker."
+        },
+        {
+          "url": "https://nypost.com/2026/01/31/us-news/federal-judge-rejects-minnesota-request-to-halt-controversial-ice-operation/",
+          "mediacloud": "A federal judge has denied Minnesota’s request to immediately halt US Immigration and Customs Enforcement's Operation Metro Surge.",
+          "rss": "US District Judge Katherine Menendez signed the order and said the plaintiffs \"have not met their burden\" for the \"extraordinary remedy\" of a preliminary injunction."
+        },
+        {
+          "url": "https://nypost.com/2026/01/31/us-news/marjorie-taylor-greene-defends-arrest-of-don-lemon-following-minnesota-church-protest-thats-not-journalism/",
+          "mediacloud": "Former Rep. Marjorie Taylor Greene defended the arrest of former CNN host Don Lemon Friday in connection to his coverage of an anti-Immigration and Customs Enforcement (ICE) protest that disrupted a Minnesota church service.",
+          "rss": "On Friday, federal agents arrested Lemon and charged him with civil rights crimes."
+        },
+        {
+          "url": "https://nypost.com/2026/02/01/business/french-tech-company-capgemini-to-sell-us-unit-linked-to-ice/",
+          "mediacloud": "French IT company Capgemini will sell its US subsidiary Capgemini Government Solutions, it said on Sunday, after coming under pressure to explain a contract the latter signed with US immigration enforcement agency ICE.",
+          "rss": "French lawmakers had asked the company to shed light the contract amid concern over the tactics used by ICE agents following the fatal shooting of two US citizens in Minnesota last month."
+        },
+        {
+          "url": "https://nypost.com/2026/02/01/opinion/walzs-vile-ice-insults-letters-to-the-editor-feb-2-2026/",
+          "mediacloud": "NY Post readers discuss Gov. Tim Walz’s comparison of ICE agents in Minnesota to Nazis in The Netherlands.",
+          "rss": "The Issue: Gov. Tim Walz’s comparison of ICE agents in Minnesota to Nazis in The Netherlands. Gov. Tim Walz’s comparison of Minnesota’s revolt against federal ICE agents to the Nazi occupation of The Netherlands belies both his abject stupidity and rank political cynicism (“Walz’s Slander,” Brendan O’Neill, PostOpinion, Jan. 27). Walz, twisted and miserable man..."
+        },
+        {
+          "url": "https://nypost.com/2026/02/01/us-news/5-year-old-boy-father-taken-into-custody-by-ice-in-minneapolis-freed-after-judge-orders-their-release/",
+          "mediacloud": "A 5-year-old boy and his father who were taken into custody by ICE during the agency's illegal immigration crackdown in Minneapolis were freed over the weekend after a federal judge ordered their release.",
+          "rss": "A 5-year-old boy who was allegedly used as \"bait\" by ICE during immigration operations in Minneapolis was released alongside his father and returned to Minnesota on Sunday."
+        },
+        {
+          "url": "https://nypost.com/2026/02/02/us-news/pam-bondi-announces-two-more-arrests-in-minnesota-church-invasion/",
+          "mediacloud": "The Trump administration has made two more arrests in connection with the disruption of a Minnesota church service by anti-ICE demonstrators on Jan. 18, Attorney General Pam Bondi announced.",
+          "rss": "\"If you riot in a place of worship, we WILL find you,\" Bondi wrote on X."
+        },
+        {
+          "url": "https://www.cbsnews.com/news/don-lemon-in-custody-former-cnn-anchor-sources-say/",
+          "mediacloud": "Don Lemon was taken into custody by federal agents in Los Angeles, where he had been covering the Grammy Awards, his attorney said.",
+          "rss": "Don Lemon was taken into custody by federal agents in Los Angeles, where had been covering the Grammy Awards, his attorney said."
+        },
+        {
+          "url": "https://www.cbsnews.com/news/federal-judge-denies-minnesotas-request-to-temporarily-halt-operation-metro-surge/",
+          "mediacloud": "Federal judge Kate Menendez denied Minnesota&#039;s motion for a temporary restraining order to halt &quot;Operation Metro Surge&quot; on Saturday. The court documents, filed on Saturday, state that Minnesota, Minneapolis, and St. Paul have not met their burden of proof.",
+          "rss": "Federal judge Kate Menendez denied Minnesota's motion for a temporary restraining order to halt \"Operation Metro Surge\" on Saturday. The court documents, filed on Saturday, state that Minnesota, Minneapolis, and St. Paul have not met their burden of proof."
+        },
+        {
+          "url": "https://www.cbsnews.com/news/jose-huerta-chuma-alex-pretti-minneapolis-shooting/",
+          "mediacloud": "&quot;I was there. I saw everything,&quot; Jose Huerta Chuma, who remains in hiding, told CBS News.",
+          "rss": "\"I was there. I saw everything,\" Jose Huerta Chuma, who remains in hiding, told CBS News."
+        },
+        {
+          "url": "https://www.cbsnews.com/news/rand-paul-says-dhs-ice-must-restore-trust-minneapolis-shootings-good-pretti-60-minutes-transcript/",
+          "mediacloud": "Lawmakers are calling for an independent investigation into immigration enforcement tactics in Minnesota as members of the Trump administration face scrutiny over claims they&#039;ve made.",
+          "rss": "Lawmakers are calling for an independent investigation into immigration enforcement tactics in Minnesota as members of the Trump administration face scrutiny over claims they've made."
+        },
+        {
+          "url": "https://www.cbsnews.com/video/immigration-crackdown-protests-continue/",
+          "mediacloud": "There were nationwide protests against President Trump&#039;s immigration crackdown on Friday. At least five protestors were arrested in Los Angeles after clashing with police. Meanwhile, former CNN journalist Don Lemon was released from jail after allegedly taking part in an anti-ICE protest at a church in Minnesota.",
+          "rss": "There were nationwide protests against President Trump's immigration crackdown on Friday. At least five protestors were arrested in Los Angeles after clashing with police. Meanwhile, former CNN journalist Don Lemon was released from jail after allegedly taking part in an anti-ICE protest at a church in Minnesota."
+        },
+        {
+          "url": "https://www.cbsnews.com/video/mixed-messaging-trump-administration-ice-drawdown-minneapolis/",
+          "mediacloud": "People in Minneapolis say ICE has not changed its ways, despite a change in command. Border czar Tom Homan said he is working on a drawdown plan for ICE, but President Trump says there is no pullback right now. CBS News&#039; Olivia Rinaldi has the details.",
+          "rss": "People in Minneapolis say ICE has not changed its ways, despite a change in command. Border czar Tom Homan said he is working on a drawdown plan for ICE, but President Trump says there is no pullback right now. CBS News' Olivia Rinaldi has the details."
+        },
+        {
+          "url": "https://www.cbsnews.com/video/strikes-demonstrations-across-us-protest-ice/",
+          "mediacloud": "Crowds gathered across the U.S. on Friday to protest immigration enforcement actions. Thousands have taken to the streets in Philadelphia, the San Francisco Bay Area, Los Angeles and beyond as activists call for a nationwide strike to protest ICE. CBS News&#039; Ian Lee reports on protests in Minneapolis.",
+          "rss": "Crowds gathered across the U.S. on Friday to protest immigration enforcement actions. Thousands have taken to the streets in Philadelphia, the San Francisco Bay Area, Los Angeles and beyond as activists call for a nationwide strike to protest ICE. CBS News' Ian Lee reports on protests in Minneapolis."
+        },
+        {
+          "url": "https://www.cbsnews.com/video/what-led-up-don-lemons-arrest/",
+          "mediacloud": "Former CNN anchor Don Lemon is facing charges of federal civil rights violations in connection with an anti-ICE protest at a Minnesota church earlier this month. CBS News&#039; Andres Gutierrez and Jake Rosen have more.",
+          "rss": "Former CNN anchor Don Lemon is facing charges of federal civil rights violations in connection with an anti-ICE protest at a Minnesota church earlier this month. CBS News' Andres Gutierrez and Jake Rosen have more."
+        },
+        {
+          "url": "https://www.cbsnews.com/video/who-can-you-kill-sunday-on-60-minutes/",
+          "mediacloud": "&quot;Who can you kill?&quot; and &quot;When can you kill them?&quot; Those are questions Republican Senator Rand Paul is asking after the death of two people in Minneapolis at the hands of federal immigration officers. He&#039;s calling for an independent investigation. Scott Pelley reports, tonight.",
+          "rss": "\"Who can you kill?\" and \"When can you kill them?\" Those are questions Republican Senator Rand Paul is asking after the death of two people in Minneapolis at the hands of federal immigration officers. He's calling for an independent investigation. Scott Pelley reports, tonight."
+        },
+        {
+          "url": "https://www.foxnews.com/entertainment/lady-gaga-faces-backlash-after-anti-ice-rant-during-tokyo-concert",
+          "mediacloud": "Lady Gaga criticized ICE operations during her Mayhem Ball concert in Japan, saying her \"heart is aching\" for children and families being \"mercilessly targeted\" in America.",
+          "rss": "Lady Gaga received mixed reactions after pausing her Tokyo concert to condemn ICE operations in Minnesota, sparking a heated social media debate among fans."
+        },
+        {
+          "url": "https://www.foxnews.com/media/border-czar-tom-homan-sets-record-straight-about-his-mission-minneapolis",
+          "mediacloud": "\"Border czar\" Tom Homan pushes back against claims Trump is backing down on mass deportation after being sent to Minneapolis.",
+          "rss": "Trump's \"border czar\" Tom Homan vows no surrender on mass deportation promise after being sent to Minneapolis to replace previous Border Patrol commander."
+        },
+        {
+          "url": "https://www.foxnews.com/media/don-lemon-released-from-custody-after-la-court-appearance",
+          "mediacloud": "Ex-CNN host Don Lemon was released without bail Friday after appearing at a Los Angeles courthouse following his arrest for his involvement in the Minnesota church protest.",
+          "rss": "Ex-CNN host Don Lemon was released without bail after making an appearance in court following charges that were brought by the DOJ for his involvement in the Minnesota church protest."
+        },
+        {
+          "url": "https://www.foxnews.com/media/how-trump-officials-narrative-gun-carrying-protester-minneapolis-kindled-rage-corners-right",
+          "mediacloud": "Alex Pretti shooting in Minneapolis sparks gun rights debate as advocate Cam Edwards criticizes DHS Secretary Kristi Noem and FBI Director Kash Patel.",
+          "rss": "Gun rights advocates criticize Trump officials' statements after Minneapolis shooting of Alex Pretti, sparking debate over carrying firearms at protests."
+        },
+        {
+          "url": "https://www.foxnews.com/media/jacob-frey-says-minneapolis-never-going-agree-enforce-federal-immigration-laws",
+          "mediacloud": "On Saturday, Minneapolis Mayor Jacob Frey said he will not enforce federal immigration laws despite President Donald Trump's warning that he is \"playing with fire\" by failing to comply.",
+          "rss": "Minneapolis Mayor Jacob Frey told The New York Times on Saturday that the city was \"never going to agree\" to enforce federal immigration laws, and that it's not the city's job to do so."
+        },
+        {
+          "url": "https://www.foxnews.com/media/noem-says-dhs-can-always-do-better-when-pressed-agencys-mistakes-before-homans-deployment",
+          "mediacloud": "Homeland Security Secretary Kristi Noem says her department could \"always do better\" amid criticism over alleged mistakes before Tom Homan's Minneapolis deployment.",
+          "rss": "Homeland Security Secretary Kristi Noem says her department could \"always do better\" as border czar Tom Homan deploys to Minneapolis amid ICE tensions."
+        },
+        {
+          "url": "https://www.foxnews.com/media/rand-paul-says-without-question-trust-has-been-broken-after-minnesota-shooting",
+          "mediacloud": "Sen. Rand Paul, R-Ky., declared trust in the Trump administration has been broken \"without question\" after the federal response to a fatal shooting in Minnesota.",
+          "rss": "Sen. Rand Paul, R-Ky., criticized the federal government's response to the fatal shooting of Alex Pretti by a border patrol agent on CBS' \"60 Minutes.\""
+        },
+        {
+          "url": "https://www.foxnews.com/media/snl-targets-ice-tom-homan-parody-sketch-meeting-agents-minneapolis",
+          "mediacloud": "\"Saturday Night Live\" featured Pete Davidson portraying Border czar Tom Homan in a cold open sketch that mocked Immigration and Customs Enforcement during the show's latest episode.",
+          "rss": "\"Saturday Night Live\" targeted ICE and Border czar Tom Homan in its latest cold open, with Pete Davidson mocking immigration enforcement in sketch of meeting with agents."
+        },
+        {
+          "url": "https://www.foxnews.com/opinion/david-marcus-don-lemons-other-unforgivable-crime-against-his-old-profession",
+          "mediacloud": "Don Lemon faces criminal charges and ethics violations after allegedly participating in a St. Paul, Minnesota, church service disruption rather than documenting it.",
+          "rss": "Don Lemon faces federal charges after allegedly participating in Minnesota church disruption while livestreaming, raising journalism ethics questions."
+        },
+        {
+          "url": "https://www.foxnews.com/opinion/fix-minnesota-where-anti-ice-federal-judge-leaves-his-lane-side-mob",
+          "mediacloud": "Judge Patrick Schiltz faces calls to recuse from immigration cases after donations to Minnesota Immigrant Legal Center, which advocates against Trump policies.",
+          "rss": "Federal judge Patrick Schiltz faces calls to recuse from immigration cases after donations to advocacy group that called Trump orders \"cruel and inhumane.\""
+        },
+        {
+          "url": "https://www.foxnews.com/opinion/gregg-jarrett-don-lemon-left-his-press-pass-door-when-he-joined-church-storming-mob",
+          "mediacloud": "Don Lemon charged with federal crimes for allegedly joining anti-ICE protesters who stormed St. Paul church, testing First Amendment press freedom limits.",
+          "rss": "Don Lemon arrested on federal charges after allegedly joining anti-ICE protesters who stormed Minnesota church, testing press freedom limits and boundaries."
+        },
+        {
+          "url": "https://www.foxnews.com/politics/behind-scenes-trump-white-house-rally-behind-noem-radicals-demand-ouster",
+          "mediacloud": "House Minority Leader Hakeem Jeffries warns DHS secretary \"needs to be put on ice permanently\" following fatal shootings during Minneapolis immigration operations.",
+          "rss": "Kristi Noem retains President Donald Trump's full support despite Democratic criticism following fatal shootings during immigration crackdown operations in Minneapolis Twin Cities area."
+        },
+        {
+          "url": "https://www.foxnews.com/politics/criminal-illegal-immigrant-allegedly-rams-ice-vehicle-minnesota-attacks-agents-surge",
+          "mediacloud": "ICE vehicle ramming suspect Tranquilino Sixto-Anorve, an illegal immigrant from Mexico, was arrested Saturday after allegedly striking federal vehicles in St. Paul, Minnesota.",
+          "rss": "Tranquilino Sixto-Anorve was arrested in Minnesota after an ICE vehicle was struck during an immigration enforcement operation, according to federal authorities."
+        },
+        {
+          "url": "https://www.foxnews.com/politics/don-lemon-faces-federal-criminal-charges-after-anti-ice-protest-disrupted-minnesota-church",
+          "mediacloud": "Forme CNN anchor Don Lemo argued he was exercising his First Amendment rights as a journalist during the protest at a church in St. Paul, Minn.",
+          "rss": "Lemon, a former CNN anchor, has argued he was exercising his First Amendment rights as a journalist during the protest at a church in St. Paul, Minnesota."
+        },
+        {
+          "url": "https://www.foxnews.com/politics/from-obama-award-minnesota-op-why-trump-tapped-tom-homan-on-the-ground-crackdown",
+          "mediacloud": "Border czar Tom Homan, a career official with bipartisan service under Obama and Trump, leads Minneapolis, Minnesota, immigration crackdown.",
+          "rss": "Tom Homan takes command of Minneapolis immigration operation after two fatal shootings spark protests, replacing Border Patrol Commander Gregory Bovino."
+        },
+        {
+          "url": "https://www.foxnews.com/politics/potential-walz-successor-unleashes-states-sanctuary-policies-rule-law-matters",
+          "mediacloud": "GOP gubernatorial candidate Patrick Knight argues Minnesota has lost its way under Dem leadership, citing crime, affordability, education failures and political theatrics over governance.",
+          "rss": "Minnesota GOP gubernatorial candidate Patrick Knight sounded off on Gov. Tim Walz and other leading Dems, saying that the state is “cratering\" as they treat the law like a “buffet.\""
+        },
+        {
+          "url": "https://www.foxnews.com/politics/trump-claims-minnesota-fraud-exceeds-19b-faults-biden-administration",
+          "mediacloud": "President Donald Trump accused Rep. Ilhan Omar, D-Minn., of being a \"scammer\" and called Gov. Tim Walz corrupt over Minnesota's welfare fraud scandal.",
+          "rss": "President Donald Trump renews attacks on Rep. Ilhan Omar and Gov. Tim Walz over the Minnesota fraud scandal linked to the Somali community."
+        },
+        {
+          "url": "https://www.foxnews.com/politics/why-federal-probe-alex-prettis-death-isnt-about-gun-rights",
+          "mediacloud": "Alex Pretti killing by federal officers in Minnesota sparked Second Amendment debate as DHS and DOJ investigate the ICU nurse's death during immigration enforcement.",
+          "rss": "Federal investigation into Alex Pretti shooting focuses on use-of-force policies, despite gun groups raising Second Amendment concerns."
+        },
+        {
+          "url": "https://www.foxnews.com/us/deputy-ag-denies-5-year-old-father-has-asylum-claim-after-family-released-from-ice-detention",
+          "mediacloud": "Deputy Attorney General Todd Blanche said \"there's a very meaningful dispute\" about whether the family of Liam Conejo Ramos properly sought asylum.",
+          "rss": "Young boy detained by ICE with father returns to Minnesota after judge's ruling, as officials clash over family's immigration status and asylum case."
+        },
+        {
+          "url": "https://www.foxnews.com/us/don-lemon-quotes-bible-response-arrest-minnesota-church-storming",
+          "mediacloud": "Don Lemon quoted the Bible and claimed persecution after his arrest tied to an anti-ICE protest at a Minnesota church.",
+          "rss": "Don Lemon quoted the Bible and cast himself as a persecuted journalist after his arrest on federal charges tied to an anti-ICE protest that disrupted services at a Minnesota church."
+        },
+        {
+          "url": "https://www.foxnews.com/us/federal-judge-rejects-minnesota-request-block-ice-led-operation-metro-surge",
+          "mediacloud": "Federal judge denies Minnesota's request to immediately halt Immigration and Customs Enforcement Operation Metro Surge, ruling the state failed to meet legal requirements.",
+          "rss": "Federal judge denies Minnesota's bid to halt ICE's Operation Metro Surge, ruling state failed to meet legal standard to block immigration enforcement."
+        },
+        {
+          "url": "https://www.foxnews.com/us/seattle-mayor-pushes-local-police-track-investigate-ice-agents-enforcement-activities",
+          "mediacloud": "Seattle Mayor Katie Wilson announced a ban on federal immigration agents from using city property and requiring police to document enforcement activity.",
+          "rss": "Seattle mayor Katie Wilson is banning federal immigration agents from city property, requires police documentation of interactions following Minneapolis events."
+        },
+        {
+          "url": "https://www.foxnews.com/world/hundreds-protest-trumps-nato-comments-greenland-demands-us-embassy-copenhagen",
+          "mediacloud": "Danish veterans protested outside the U.S. Embassy in Copenhagen over Trump's NATO comments and Greenland demands, laying 52 flags honoring fallen soldiers.",
+          "rss": "Hundreds demonstrated in Copenhagen Saturday after President Trump's NATO remarks sparked outrage among Danish military veterans who served in Iraq and Afghanistan."
+        },
+        {
+          "url": "https://www.nbcnews.com/news/us-news/don-lemon-arrested-federal-authorities-attorney-says-rcna256680",
+          "mediacloud": "Former CNN anchor Don Lemon was arrested on Friday and accused of violating federal civil rights law in connection with his coverage of a protest at a Minnesota church earlier this month",
+          "rss": "Former CNN anchor Don Lemon was arrested by federal authorities and charged with federal civil rights crimes in connection with a protest at a Minnesota church service earlier this month"
+        },
+        {
+          "url": "https://www.nbcnews.com/news/us-news/judge-allows-ices-operation-metro-surge-continue-minnesota-rcna256847",
+          "mediacloud": "MINNEAPOLIS — A federal judge on Saturday declined to immediately halt Operation Metro Surge, allowing the sweeping federal immigration enforcement action in Minnesota to continue while a broader legal challenge plays out.U.S.",
+          "rss": "A federal judge on Saturday declined to immediately halt Operation Metro Surge, allowing the sweeping federal immigration enforcement effort to continue in Minnesota while a broader legal challenge plays out."
+        },
+        {
+          "url": "https://www.nbcnews.com/politics/donald-trump/trump-sue-trevor-noah-grammy-joke-epstein-island-rcna257019",
+          "mediacloud": "President Donald Trump is threatening to sue Trevor Noah over a joke at last night's Grammy Awards, saying in an overnight post on Truth Social that the comedian's crack claiming he visited Jeffrey Epstein's island was \"false and defamatory.\"Noah, who hosted the awards show, had poked at Trump's relationship with the late sex offender and the president's ambitions for the United States to take over Greenland.\"That is a Grammy that every artist wants almost as much as Trump wants Greenland,\" Noah said.",
+          "rss": "President Donald Trump is threatening to sue comedian Trevor Noah over a joke at last night's Grammy Awards, saying in an overnight post to Truth Social that Noah's crack claiming he visited Jeffrey Epstein's island was \"false and defamatory.\"Noah, who hosted the awards show, had poked at Trump's relationship with Epstein and the president's ambitions for the U.S. to take over Greenland.\"That is a Grammy that every artist wants almost as much as Trump wants Greenland,\" Noah said."
+        },
+        {
+          "url": "https://www.nbcnews.com/politics/immigration/5-year-old-liam-conejo-ramos-returns-minnesota-rcna256933",
+          "mediacloud": "A 5-year-old boy who became a viral symbol of the Trump administration’s immigration crackdown is back home after he and his father were released from an immigration facility in Texas on Saturday",
+          "rss": "A 5-year-old boy whose photo in a blue hat and Spider-Man backpack became a viral symbol of criticism of U.S. immigration enforcement is back home after being released from an immigration facility in Texas."
+        },
+        {
+          "url": "https://www.nbcnews.com/politics/trump-administration/doj-opens-civil-rights-probe-alex-pretti-death-minneapolis-rcna256751",
+          "mediacloud": "The Justice Department has opened a federal civil rights probe into the fatal shooting of Alex Pretti in Minneapolis, Deputy Attorney General Todd Blanche said in Friday.",
+          "rss": "The Department of Justice has opened a federal civil rights probe into the fatal shooting of Alex Pretti in Minneapolis, Deputy Attorney General Todd Blanche said in a Friday."
+        },
+        {
+          "url": "https://www.npr.org/2026/01/30/nx-s1-5694313/alex-pretti-shooting-doj-civil-rights-investigation",
+          "mediacloud": "Alex Pretti's shooting death by federal agents in Minneapolis has prompted a Department of Justice civil rights probe. Renee Macklin Good's death by federal agents has not.",
+          "rss": "Alex Pretti's shooting death by federal agents in Minneapolis has prompted a DOJ civil rights probe. Renee Macklin Good's death by federal agents has not."
+        },
+        {
+          "url": "https://www.npr.org/2026/01/31/nx-s1-5695197/as-winter-olympics-milan-protesters-call-for-ice-agents-to-leave-italy",
+          "mediacloud": "An ICE unit from the US Department of Homeland Security is playing a role providing security at the Winter Games.  At past Olympics, their involvement would have been unremarkable. But after the violence in Minneapolis, many Italians protesting in Milan say ICE agents are no longer welcome.",
+          "rss": "An ICE unit from the US Department of Homeland Security is playing a role providing security at the Winter Games. At past Olympics, their involvement would have been unremarkable. But after the violence in Minneapolis, many Italians protesting in Milan say ICE agents are no longer welcome."
+        },
+        {
+          "url": "https://www.npr.org/2026/02/01/nx-s1-5689031/minnesota-citizens-detained-ice",
+          "mediacloud": "The number of immigration agents in Minnesota may be reduced, but they'll leave behind a changed community, including many U.S. citizens questioned and detained in recent weeks.",
+          "rss": "The number of immigration agents in Minnesota may be reduced, but they'll leave leave behind a changed community, including many U.S. citizens questioned and detained in recent weeks."
+        }
+      ]
+    },
+    "final_url": {
+      "both_equal": 86,
+      "both_different": 0,
+      "only_mediacloud": 0,
+      "only_rss": 0,
+      "examples": []
+    },
+    "http_status": {
+      "both_equal": 0,
+      "both_different": 0,
+      "only_mediacloud": 86,
+      "only_rss": 0,
+      "examples": []
+    },
+    "id": {
+      "both_equal": 0,
+      "both_different": 86,
+      "only_mediacloud": 0,
+      "only_rss": 0,
+      "examples": [
+        {
+          "url": "https://abcnews.go.com/Politics/trump-continues-defend-homan-noem-amid-immigration-enforcement/story?id=129731874",
+          "mediacloud": "d8d851e6037287306acc3c16ef784b6e4ac68b4d4413e1d41940211fa0b58e10",
+          "rss": "5a63c8f56561cc32db317d956755d6e660888bc2816538cba1875fa6751cd724"
+        },
+        {
+          "url": "https://abcnews.go.com/US/5-year-liam-conejo-ramos-father-board-plane/story?id=129749784",
+          "mediacloud": "0b5720c8386d659dd3249fa8c8b33b7b3c1ec57433d976a7b11249e43e948cb8",
+          "rss": "2cec013047cd433c29832f3c094e0966d946e599bbde7b81c0fb8685ad4fc09a"
+        },
+        {
+          "url": "https://abcnews.go.com/US/video/dhs-sends-initial-report-alex-pretti-killing-congress-129632778",
+          "mediacloud": "7dacb029478018017cffb67044659be98b45f2f65116f70815da30cb09dca1d7",
+          "rss": "c14fdb4919dbb5a932a7b7895e03ff3247fc94b0877d882b00567954f8210165"
+        },
+        {
+          "url": "https://abcnews.go.com/US/video/man-arrested-after-charging-rep-omar-spraying-liquid-129637671",
+          "mediacloud": "32af404aaff8d6c194e5c84d50bf88b68e3f424a3861fc457700f7c63636d1e3",
+          "rss": "cbf7c5ef03595affbb2cea8794de0cba98a10dcb62e5974359a6049e596b4efc"
+        },
+        {
+          "url": "https://abcnews.go.com/US/video/minneapolis-mayor-frontlines-important-battle-129682246",
+          "mediacloud": "9f9d38c5226d4076352753c773329ecbcb2e2d7cc0fb52a5e9f4b751e0f9c304",
+          "rss": "3ccd735b4f2618d915c78ea5337556451dbc3a3d8c4e8053fb2a457f33b617a6"
+        },
+        {
+          "url": "https://abcnews.go.com/WNT/video/us-coast-guard-deploys-ice-breaking-ships-new-129685036",
+          "mediacloud": "001167bba75878c8a5a42d7a839bd8f7dac9624808654b3d18879a3c6b739cb5",
+          "rss": "84be9b074514c9ff10383fe40e16af5f600bb92c19e035b7091f290c0b2b343f"
+        },
+        {
+          "url": "https://nypost.com/2026/01/30/us-news/heres-what-doj-must-prove-to-convict-don-lemon/",
+          "mediacloud": "5d704f9511f6f57ee8f2996001cb7f0044d0076bd66ea19893f54e55f971b0fe",
+          "rss": "d25e71f8dc547d08f8eb4f6bb77395b4abf91d34c7231a7548911a9da2f1ab62"
+        },
+        {
+          "url": "https://nypost.com/2026/01/31/us-news/anti-ice-maidens-women-dominate-roster-of-radicals-tracking-minnesota-dhs/",
+          "mediacloud": "38c933ce034e7ec2b8b4d379d3b90ad132b3caa3d684c0b02b74479135c26b13",
+          "rss": "2aafae4f630945769cf33e1c61ca4d239e9ce0ff399f89c6d15c3966eefb2300"
+        },
+        {
+          "url": "https://nypost.com/2026/01/31/us-news/federal-judge-rejects-minnesota-request-to-halt-controversial-ice-operation/",
+          "mediacloud": "6d31aaddfef640dc41d2cffe93472760a673c90349ccc903f508c9cc87797221",
+          "rss": "491ab59ca5b891ceac7c939107ef6841dd0e417747e2be3297e3697e9a3bec32"
+        },
+        {
+          "url": "https://nypost.com/2026/01/31/us-news/marjorie-taylor-greene-defends-arrest-of-don-lemon-following-minnesota-church-protest-thats-not-journalism/",
+          "mediacloud": "d68f00b02b081da5d5400a8a9ebee410e361be74298582d1b7fc93a46d88686a",
+          "rss": "32590a973f92c0d19fabff601581785d35d305d7533c00f0e96af4548c380db8"
+        },
+        {
+          "url": "https://nypost.com/2026/01/31/us-news/trump-claims-minnesota-fraud-exceeds-19b-blames-biden-administration/",
+          "mediacloud": "ba10a23acf0f5597434297470b080234b8c3bd2e4e10946983163f83291eac6a",
+          "rss": "3fef750b0536b7d6bec6ae2775dca2f0a5f084cc660729c0c9c299fda23d6139"
+        },
+        {
+          "url": "https://nypost.com/2026/02/01/business/french-tech-company-capgemini-to-sell-us-unit-linked-to-ice/",
+          "mediacloud": "17f3a5ccba332a0d0a3ec5acedbba41e17853ee67fa4ee6795c121462f573f50",
+          "rss": "4c4f6d6286c241e9eea3719fe5e12563a425610efbb9a4490c5cd05740fe944c"
+        },
+        {
+          "url": "https://nypost.com/2026/02/01/opinion/does-hochul-want-to-bring-anti-ice-minneapolis-chaos-to-new-york/",
+          "mediacloud": "67894877f0285574cd43089f56e8340f194a274d7db605b3bf03ca99e2be7a70",
+          "rss": "d0ed8666d58b2cc14c5931b4b71e49d1df2bb6f32cc17dee27c7aae0b6dd8d22"
+        },
+        {
+          "url": "https://nypost.com/2026/02/01/opinion/ive-seen-insurgencies-up-close-anti-ice-actions-look-eerily-familiar/",
+          "mediacloud": "105df5198b7d9efe27f751670edc2f8dec2e3bde7496e082c451ef103c9b55a3",
+          "rss": "53c9c422cdf93b0a5415f896bab5e56a85a8dcc87b37dc00310b027b7844962b"
+        },
+        {
+          "url": "https://nypost.com/2026/02/01/opinion/walzs-vile-ice-insults-letters-to-the-editor-feb-2-2026/",
+          "mediacloud": "114f2845561c3d6f2af018848fab0ad0d9794ad9118a6d015727219a3966338b",
+          "rss": "a0bfdecb818caf439cfa6bc55e4be833c7144ec1b0d650a8ea78cc5b4173d76d"
+        },
+        {
+          "url": "https://nypost.com/2026/02/01/us-news/5-year-old-boy-father-taken-into-custody-by-ice-in-minneapolis-freed-after-judge-orders-their-release/",
+          "mediacloud": "0667f11ca895ff3b75087096bfa090b29dd10c92e1b52f45421762c5b25015fa",
+          "rss": "f6420722cca00189f1aea9cf77e43889cca1fab5e320ca0418cd0db60ed43fc6"
+        },
+        {
+          "url": "https://nypost.com/2026/02/01/us-news/kristi-noem-stephen-miller-attend-maga-insiders-wedding-together-after-pointing-fingers-at-each-other-over-minneapolis-ice-crackdown/",
+          "mediacloud": "c651f677a6ad5d2878e549ae66850fd4b93e7c439c6f986bf1a335cf99488ab8",
+          "rss": "59cd1d06599864b49ddad013a3baec7eb0d9df20998a69373c16c2b9c45793e7"
+        },
+        {
+          "url": "https://nypost.com/2026/02/02/us-news/pam-bondi-announces-two-more-arrests-in-minnesota-church-invasion/",
+          "mediacloud": "39585e2f1d7b8c9bb90a9f37c7cd0da70019689cee8dbcf4be007b734db0cb08",
+          "rss": "f855d62d8d0a9c5e8289dfe4b7ac13225f955c6f0c9a4b3dcb058c10abca7394"
+        },
+        {
+          "url": "https://www.cbsnews.com/news/alex-pretti-shooting-fbi-investigation/",
+          "mediacloud": "be9a106acb48a468859f22249a2aec398904e682a7db4d83352ea8c0a523f980",
+          "rss": "35c6b0d48e4cfafde1bc6bee5ad34393709812ee95598f26003b39ed6a3cdd5d"
+        },
+        {
+          "url": "https://www.cbsnews.com/news/capitol-riot-prosecutors-draft-strategy-for-congress-to-probe-killings-federal-agent-conduct-in-minneapolis/",
+          "mediacloud": "104d723136e37a805d44fc59f50bf7675ea2d1c8e404bdc9ac136fa6e8778ffe",
+          "rss": "682b6df2fa649cda8f142fbe17182e3684d8ce32eb323fda08f06a08bbac730d"
+        },
+        {
+          "url": "https://www.cbsnews.com/news/doj-opens-civil-rights-investigation-alex-pretti/",
+          "mediacloud": "059f6e625c01acfce683014bb8c843a5b6a76df74d9914167fddc98c3f6b5877",
+          "rss": "00fdd7ac3ed7c1dacafb9f8e01e10309b7a6f116f849e1f30eb6675478a1e54a"
+        },
+        {
+          "url": "https://www.cbsnews.com/news/don-lemon-in-custody-former-cnn-anchor-sources-say/",
+          "mediacloud": "dd2d8635670d89293fbe608a76009cf2de4838cf0ca1868b0e97cd63a8337d05",
+          "rss": "4c5c96b9ea6908733fbcd48bfdd3a1bdd766f3e3bc4ae52693de119c52eacb6d"
+        },
+        {
+          "url": "https://www.cbsnews.com/news/federal-judge-denies-minnesotas-request-to-temporarily-halt-operation-metro-surge/",
+          "mediacloud": "df156f5e06251d6c2e8c35cd2453d3bc28d437f61e567bb9de3b51a5d1e904f1",
+          "rss": "6bd0e675bc1ce41b77f126f081fdaaefc9d098199b02e3fa4484d278f37b3ca8"
+        },
+        {
+          "url": "https://www.cbsnews.com/news/gregory-bovino-minnesota-language-offensive-to-jews-sources/",
+          "mediacloud": "5461f580d98413bec3ea70165e86b0fd951974e4c7bea37f5e5edbeefb712185",
+          "rss": "4114387d106b001c84e766c71aaefac7554e4055d46d56adfd0a269c05748deb"
+        },
+        {
+          "url": "https://www.cbsnews.com/news/jose-huerta-chuma-alex-pretti-minneapolis-shooting/",
+          "mediacloud": "4447d6762c4b183b26a6e8df3e7e025cf2c80d0a65aaa3916b497c7f78d2dbd0",
+          "rss": "03bd92228cfdc24e790addf2aae35ee12b8d80ede8f29bed8e1c6c6999d3324f"
+        },
+        {
+          "url": "https://www.cbsnews.com/news/rand-paul-says-dhs-ice-must-restore-trust-minneapolis-shootings-good-pretti-60-minutes-transcript/",
+          "mediacloud": "365612e824fa51af6b48987747664ba97c0ad230a8dc6a392731ef1af5f6dfa0",
+          "rss": "ac8e3fa601467aa4f83c439d53df75f254f93ea72f2bcf3aece0417e82d78b3e"
+        },
+        {
+          "url": "https://www.cbsnews.com/video/012726-cbs-evening-news/",
+          "mediacloud": "caf787acb99bd4fb873f30391a5ccfa760d8c21bc54f88f8873c23b8b3b8b9fe",
+          "rss": "ec0e2ea4c462b3658128b1e5279525291b37f9986f417a2cffbadc9bcc5690f3"
+        },
+        {
+          "url": "https://www.cbsnews.com/video/012726-the-takeout/",
+          "mediacloud": "1817e1a30b1fa2377afa28d9cc867dd1405b33a350e712fc9ee90360a081af3c",
+          "rss": "1ba2d2e5c871bf35b78db27f3d686fbd182aea9f5f0ee9d0a9d54d73341681c3"
+        },
+        {
+          "url": "https://www.cbsnews.com/video/012826-the-takeout/",
+          "mediacloud": "a59de096f2e1888e1f0a575a198c2cfc7e340ff8372a5213c127f99585620261",
+          "rss": "7cb91259577db6fcd533e69b758acfc919ac453f23ccdeaf004991847acec072"
+        },
+        {
+          "url": "https://www.cbsnews.com/video/don-lemon-arrested-after-covering-minnesota-church-protest/",
+          "mediacloud": "02bb021109bfb66854e5f4dd107e39b3b6e6e2d85cfb9ff7b8381dedbdc77932",
+          "rss": "02ae1de0ad563a21c975f7129d7f3668f71aa51528a4731d8a52835e3ff8f28c"
+        },
+        {
+          "url": "https://www.cbsnews.com/video/don-lemon-released-bond-arrest-minnesota-church-protest/",
+          "mediacloud": "370a553bd3225692dff6bfbaf382d4fac155aa6be38e35a3553e2944237c25dc",
+          "rss": "ce054e86e982ee2e9e08fecb2825d3d1d4e752fcbf0cee54e50f3a7a465edfb4"
+        },
+        {
+          "url": "https://www.cbsnews.com/video/father-and-his-5-year-old-son-released-from-ice-custody/",
+          "mediacloud": "05776b83afcba5829e4cc17e5b7085c65b5487fac8f89f432832f3b964af5d78",
+          "rss": "464f0fe3985dcea3f193118d8e90cf3776abe6b054faf4784113d354af2043d4"
+        },
+        {
+          "url": "https://www.cbsnews.com/video/former-cnn-anchor-alisyn-camerota-reacts-don-lemon-arrest-stunned/",
+          "mediacloud": "7ea9520d5205b6d37cbfd8a2c239516576cb542d6fc1a95880e76ca69d3e3fe5",
+          "rss": "f85b3fd6fae55a21ba4e031b4e52876592cb771b2aea0c49b307a15bf09915fd"
+        },
+        {
+          "url": "https://www.cbsnews.com/video/immigration-crackdown-protests-continue/",
+          "mediacloud": "e10f8f726641c1a98151477fe180d5d569d9bb2770a5f46d1f680aaf16c9179d",
+          "rss": "0a6495229c3fb822306fb3a697d65d52f7e63d5cac0919af81bfff815c9824aa"
+        },
+        {
+          "url": "https://www.cbsnews.com/video/journalist-don-lemon-set-to-appear-in-court-following-arrest-minnesota-church-protest/",
+          "mediacloud": "856fbb24c39e84069421cc6bf9510bf5d5d45dd1f69f845949a480c831a6fe18",
+          "rss": "70df34b5b1bd7dac5aaf618fb2b65b68312a87688aa441afc83bc22c1085a3e0"
+        },
+        {
+          "url": "https://www.cbsnews.com/video/mixed-messaging-trump-administration-ice-drawdown-minneapolis/",
+          "mediacloud": "0af87c859f8159339e5fa84943dd87a9a839d3c91fcce2ddee3a61818b419cd0",
+          "rss": "b4acb02ef3207bd359d149f4dcae29286e3ff047c8a790a2a787e8229201b3dc"
+        },
+        {
+          "url": "https://www.cbsnews.com/video/strikes-demonstrations-across-us-protest-ice/",
+          "mediacloud": "f79dc40046f3fe33070ae32dadbf092d028b44f3cc68a204d634d11b14574644",
+          "rss": "d7b93e489e518b118b74bf1d9f7a52791b70898530c85c831cc137e5158c63dd"
+        },
+        {
+          "url": "https://www.cbsnews.com/video/trump-says-kevin-warsh-is-the-perfect-candidate-to-run-the-federal-reserve/",
+          "mediacloud": "5c7f8ec0e7d374b7d5663382e84ffc8dfa8d873edc95a8765192e61aa17135a6",
+          "rss": "7153c104a9e3e0b38a4c0c94b206ceee6fea5804527877ef7366c837af2f52c9"
+        },
+        {
+          "url": "https://www.cbsnews.com/video/what-led-up-don-lemons-arrest/",
+          "mediacloud": "fd44c67533abc95b1b2ac0565e6ff6fabf6162cb8741f323f55fd65af56af446",
+          "rss": "67c282d0e7d61fbfb8b6226dfea70e2e6b0980bfee760dc39220ff6504d1ccdc"
+        },
+        {
+          "url": "https://www.cbsnews.com/video/who-can-you-kill-sunday-on-60-minutes/",
+          "mediacloud": "608e21fff701aa1375c5de2a41b7c16d6dd85eed0fcd1b7e1085a6370b1ec1f0",
+          "rss": "afe6d276e58ed1d75559c24445f697f825b85b5984bfb0d7079c18194a81e4b6"
+        },
+        {
+          "url": "https://www.foxnews.com/entertainment/lady-gaga-faces-backlash-after-anti-ice-rant-during-tokyo-concert",
+          "mediacloud": "dfb7d90340f09d7bcedcb2bca13daefcedfe690415f153f7e7dbffd5061a71fa",
+          "rss": "d4ec3636bb7cb0c229dab2a66488f284e52bef29319000ba22680e66658019da"
+        },
+        {
+          "url": "https://www.foxnews.com/media/border-czar-tom-homan-sets-record-straight-about-his-mission-minneapolis",
+          "mediacloud": "2080cb4b0b83098d729b72e7ccfdd3812c0207841726317f66e0134e5d9740dd",
+          "rss": "1fc64ac51ba08028d044c9c2d22d2ca49ca540acf0eb2673a64a433dd314c932"
+        },
+        {
+          "url": "https://www.foxnews.com/media/don-lemon-released-from-custody-after-la-court-appearance",
+          "mediacloud": "25fddd58edc5244901140fea7987221e14a8f28b89abf7986deef80b93f8302c",
+          "rss": "e8ee5081f8ff662a9491555f807017ce43eaf420930f84c0d02908355138ed41"
+        },
+        {
+          "url": "https://www.foxnews.com/media/how-trump-officials-narrative-gun-carrying-protester-minneapolis-kindled-rage-corners-right",
+          "mediacloud": "81fb832b92db1f5b6b19c63248bae5d806b93a8c60a3549979640924353b7290",
+          "rss": "74de0799f5938bdb96456a45265c0ad5d3353f16170b0373aea19b3920f5b909"
+        },
+        {
+          "url": "https://www.foxnews.com/media/jacob-frey-says-minneapolis-never-going-agree-enforce-federal-immigration-laws",
+          "mediacloud": "eea607a878b949ff560205a57bf11eb4f43675d68e11e85bb4e2df16d805513b",
+          "rss": "90a1402f1944302e918d349b76203ae0c656c7ea97a91697ceddead09abb7c33"
+        },
+        {
+          "url": "https://www.foxnews.com/media/noem-says-dhs-can-always-do-better-when-pressed-agencys-mistakes-before-homans-deployment",
+          "mediacloud": "3d4b93e0a7d11b377c453d2021c07a102d154bd2dd12902d741561ccdef269a9",
+          "rss": "8e61827c57e1aef49c09253d43f9a9e33f802258ffad4281c95392a0c191435f"
+        },
+        {
+          "url": "https://www.foxnews.com/media/rand-paul-says-without-question-trust-has-been-broken-after-minnesota-shooting",
+          "mediacloud": "65cc23f52c26eb85dd6c2b8fcdf181f29ac2cf9194674534d4f5d4773c6a3d82",
+          "rss": "87e48a4e7198732a264a1a2caf8bf5815ffbf2be022791c5fe6115fcecd4bff4"
+        },
+        {
+          "url": "https://www.foxnews.com/media/snl-targets-ice-tom-homan-parody-sketch-meeting-agents-minneapolis",
+          "mediacloud": "b491e4c4364443e7e80ff3b5dcf630ef370b6e134bc5c9588a682aba09be7695",
+          "rss": "34286f68544e0d8a355cc866c5e61c280d40ce755e700c9d387b8a73f9cc3cf3"
+        },
+        {
+          "url": "https://www.foxnews.com/opinion/david-marcus-don-lemons-other-unforgivable-crime-against-his-old-profession",
+          "mediacloud": "f2f5e16b0bb60dd190a4d34dd2ef987dceaa7da69a498c58bcc831b917d58f70",
+          "rss": "c6e2b25180696c79953977dd494e8016cc59915eddc6980fc4bbf4a58559d0ff"
+        },
+        {
+          "url": "https://www.foxnews.com/opinion/fix-minnesota-where-anti-ice-federal-judge-leaves-his-lane-side-mob",
+          "mediacloud": "778ea8fe1628111161ca0a7d3791f4d359797096769bf2fcf94ca9093ebd9f16",
+          "rss": "b8bb2e63a2f789d552d59b5f238f5a5dc75d212614c4176effcafe5eb2e75322"
+        },
+        {
+          "url": "https://www.foxnews.com/opinion/gregg-jarrett-don-lemon-left-his-press-pass-door-when-he-joined-church-storming-mob",
+          "mediacloud": "865be6384640b3e4a46d1da2142d1b002f2ec149970f693c87ece26445c5b5ea",
+          "rss": "c7df5e9c7a385faaf2c7f5dda2408fb3e0251f290912e9786181f91f30d184c2"
+        },
+        {
+          "url": "https://www.foxnews.com/opinion/mariann-budde-154-bishops-question-facing-america-whose-dignity-matters",
+          "mediacloud": "274b2a8f5ce624e6d42694c6df974d9da5719eb8323f80f219bf525f4ba071a3",
+          "rss": "f995ef0c6506e8387f922d856510de22a702f0d8a2fb7ea9780043b495ee874e"
+        },
+        {
+          "url": "https://www.foxnews.com/politics/behind-scenes-trump-white-house-rally-behind-noem-radicals-demand-ouster",
+          "mediacloud": "89c776dfb0414d176dd92dfbc3d8e267b49631c7dceea232a82c049e241df61b",
+          "rss": "3cc012e16aec57f17d6f966e36d0cf42dd8255f43e3d237fbd16c19627a12003"
+        },
+        {
+          "url": "https://www.foxnews.com/politics/criminal-illegal-immigrant-allegedly-rams-ice-vehicle-minnesota-attacks-agents-surge",
+          "mediacloud": "f03c2fe60f6dea071f47dd0557f81b13d048f5dd2a9a74f3b82cbb4002c60a9a",
+          "rss": "aee2587863e5c6ee943cb8a0cd6d7570e77c9d3c863e5acac78a600557283c48"
+        },
+        {
+          "url": "https://www.foxnews.com/politics/don-lemon-faces-federal-criminal-charges-after-anti-ice-protest-disrupted-minnesota-church",
+          "mediacloud": "e9b003d710cd64380762b794dc63bd51babde1d2204afad55bde07569c061c0d",
+          "rss": "1961b6e6ca4aa1888093c8e4b05074e7713616b01b55c72922de21383ee379ff"
+        },
+        {
+          "url": "https://www.foxnews.com/politics/federal-agents-arrest-2-more-connection-minnesota-church-storming",
+          "mediacloud": "67bffa95b56b17f2f6604b085e35265c5c14820a8beeb23166e04d04b06e1849",
+          "rss": "7ca23e4cb021a8e8922982818727ffcade5de60611bd051e6121cde89fe29086"
+        },
+        {
+          "url": "https://www.foxnews.com/politics/from-obama-award-minnesota-op-why-trump-tapped-tom-homan-on-the-ground-crackdown",
+          "mediacloud": "9b852704d47acde5e642ca6d9bfad0d8bbbed3c9a744af2a1859696452a42106",
+          "rss": "bfe875175028770b4efee611236185565aaac33e5a517d6d6f1b3a06e36f13cb"
+        },
+        {
+          "url": "https://www.foxnews.com/politics/potential-walz-successor-unleashes-states-sanctuary-policies-rule-law-matters",
+          "mediacloud": "697ad61ccad2da33928403e8ab74594dd24b5217ea14b90ea3404e7bbff9d429",
+          "rss": "7085508b5db41a75332935c572da8551e51c089beb8430d9bae02b3db61499d4"
+        },
+        {
+          "url": "https://www.foxnews.com/politics/trump-claims-minnesota-fraud-exceeds-19b-faults-biden-administration",
+          "mediacloud": "4faaff66e6d3389e1e08b783bdb71426029e15962b1188f970c166014505e9e4",
+          "rss": "958b1f94bc2faadc7f0974057059ef58807046e8adb4ee0cfdec4012a5e88a62"
+        },
+        {
+          "url": "https://www.foxnews.com/politics/why-federal-probe-alex-prettis-death-isnt-about-gun-rights",
+          "mediacloud": "67d01f54fe4d298d5da09be1fe4a2cf43c0541068550bbc611781c65bbc39344",
+          "rss": "470d69731bd4879f90bcb2e182265122b3e48ba9b7c0276db79b2d1a41d840d0"
+        },
+        {
+          "url": "https://www.foxnews.com/us/deputy-ag-denies-5-year-old-father-has-asylum-claim-after-family-released-from-ice-detention",
+          "mediacloud": "a5c9e05b2d202d7e03bdb8068d58a9b7dcbeea05869d48406493ff501a366546",
+          "rss": "56f917e7e89aaaf6747354f44f651ca56745f45246299d0b6657dfefd2c31f22"
+        },
+        {
+          "url": "https://www.foxnews.com/us/don-lemon-quotes-bible-response-arrest-minnesota-church-storming",
+          "mediacloud": "c6c6a93e52363c90d9d56f49e9a12c80217f8187458fd5551b75290814d7510f",
+          "rss": "fe35b615c5cf90a05b33c2ad8ce20f4f4740a1e03f1f471472a102c04f2e6c3c"
+        },
+        {
+          "url": "https://www.foxnews.com/us/federal-judge-rejects-minnesota-request-block-ice-led-operation-metro-surge",
+          "mediacloud": "bf33c3026bb08aade689b56e551511d7fcdfc0be1a4111673eeff75ba33ac931",
+          "rss": "19e86a44b24c8ff57ec751e49a0de4c51323c8194d79c2066329d3b2b5dc63b3"
+        },
+        {
+          "url": "https://www.foxnews.com/us/seattle-mayor-pushes-local-police-track-investigate-ice-agents-enforcement-activities",
+          "mediacloud": "ef0df33ce9e0328a3e12a69e1b961c60e2f6d2ceef437dd50c57cf5386405ef5",
+          "rss": "6e335e757d05eec18e21d51b78dc4be3dbde54e755f0337d58f571e6492521f5"
+        },
+        {
+          "url": "https://www.foxnews.com/world/hundreds-protest-trumps-nato-comments-greenland-demands-us-embassy-copenhagen",
+          "mediacloud": "1f8eb61438b9a6402e215dae60fa78fe6c068e378fbca900aadf52a957557615",
+          "rss": "d396d350975c24ce04573a60d2ebfe2cf1a873417e4412efcc17850fc161ce29"
+        },
+        {
+          "url": "https://www.nbcnews.com/business/consumer/corporate-response-pretti-minnesota-rcna256339",
+          "mediacloud": "cc5bb7ee8e8d4b26718dd805da5dc22fe38aae4511d588f269d61efe77b2398e",
+          "rss": "fb6a2e231a3d18a8e27833981d8d7fc1d0cfb5c20a73eb96bf2c73023889e406"
+        },
+        {
+          "url": "https://www.nbcnews.com/news/us-news/don-lemon-arrested-federal-authorities-attorney-says-rcna256680",
+          "mediacloud": "257267961a6885f66d9aef660fccc8ff4f9eb3ec080dc091caac0948dc000922",
+          "rss": "03558dc2cef3d8d7bac0e0e9fee340890fa6199076dac64cd541fe15eb670949"
+        },
+        {
+          "url": "https://www.nbcnews.com/news/us-news/judge-allows-ices-operation-metro-surge-continue-minnesota-rcna256847",
+          "mediacloud": "0a84f6ea35acd8a79fa2249c0c91353cdcf40a97d050e3de78e1f4de5c7481c1",
+          "rss": "ff9b96b4fcf3ba530186533fd5aa0d8b832be38389d63d1578feba85fbdadfce"
+        },
+        {
+          "url": "https://www.nbcnews.com/news/us-news/minneapolis-family-hiding-immigration-deportation-rcna256102",
+          "mediacloud": "394c9da93cfc060b3a443ed4be53dbc9915a50d1cafae96ad9166b457656803f",
+          "rss": "bac2c61a6a0fdf7629f9b17b2e6a5b6e712233c89327aadd78a60c2238f7c914"
+        },
+        {
+          "url": "https://www.nbcnews.com/politics/donald-trump/trump-sue-trevor-noah-grammy-joke-epstein-island-rcna257019",
+          "mediacloud": "6d6d819d20a3dd4b8ff7f7392e84e58e5348c410783bcea7e34eaed2414096fe",
+          "rss": "acb912809e1f4829e42f41546c21d3ce3dd3e8ff9e8b82e6c941305450516d53"
+        },
+        {
+          "url": "https://www.nbcnews.com/politics/immigration/5-year-old-liam-conejo-ramos-returns-minnesota-rcna256933",
+          "mediacloud": "d3763ef4b28e78eded15b0ed389a209c693c96b6c08006c16b902e307de75bcd",
+          "rss": "0a4970fad820117ef8fbb4dad50c86b99c46928b93946d017a637b4e7666e71e"
+        },
+        {
+          "url": "https://www.nbcnews.com/politics/politics-news/trump-calls-alex-pretti-insurrectionist-agitator-new-video-icu-nurse-e-rcna256724",
+          "mediacloud": "5a9a03529c666b2100ec5108ab641023764a16e907324c28ad68f4e49416d782",
+          "rss": "c9abf725dba23a9fd2421f41367834d464b5ca9a85f7a52f2a67d76e6e516cf8"
+        },
+        {
+          "url": "https://www.nbcnews.com/politics/trump-administration/doj-opens-civil-rights-probe-alex-pretti-death-minneapolis-rcna256751",
+          "mediacloud": "2c8146227dd39aa825496543c8a8d0d5ecb1ce6cc480c3da5969973e5e2da07d",
+          "rss": "a38eeb83a461846e32f3561255a1db1ac9f32e05b3b6b44b993a3b6718547a79"
+        },
+        {
+          "url": "https://www.nbcnews.com/sports/olympics/winter-olympics-2026-athletes-protest-ice-trump-minneapolis-shooting-rcna256219",
+          "mediacloud": "8fb0104b63f547e6fb672b40bd9b6610428fa9a26c57ed14716377598d8d3316",
+          "rss": "d60a28e47411336b7d7cb17df5b49fd8f5fb73a643ab748d5f471b4801846138"
+        },
+        {
+          "url": "https://www.nbcnews.com/tech/tech-news/ai-altered-photos-videos-minneapolis-shootings-blur-reality-rcna256552",
+          "mediacloud": "cbf2edca2c22da295c1a9be1dbc3c17cec9fdaab467f6d9e5b2bf12f3f45efc0",
+          "rss": "df5b6d4e4d1cb6106f2fd025e1f389353fa55c8e66630d03910e0c19591b6e37"
+        },
+        {
+          "url": "https://www.nbcnews.com/video/shorts/doj-to-open-civil-rights-probe-into-pretti-shooting-256913989746",
+          "mediacloud": "21ec154f65b7154cc5e279ed8404863c04968fbf6eab324634feb0ca1bc55ecf",
+          "rss": "758e335c84bd536c7800de513130c64b47f4759ffe16d987363b4404deb393d7"
+        },
+        {
+          "url": "https://www.npr.org/2026/01/30/nx-s1-5691909/tim-walz-immigration-trump-protests",
+          "mediacloud": "c3101e78b391a406eb4eeaa60c32b65cb441e7c38b2b2f246cf26cb7195a5fa5",
+          "rss": "e0fcb7ac5b7fc9980b75f837d6282cd72eaa1daebc5b9ba86db91dc8696b3480"
+        },
+        {
+          "url": "https://www.npr.org/2026/01/30/nx-s1-5694313/alex-pretti-shooting-doj-civil-rights-investigation",
+          "mediacloud": "4a0a0afebc97981eabc7bbf3957e3355f1c8d8015c204bbd928c384fdd20cdf8",
+          "rss": "4e87255363334d73f8753d9c85ff24bf70dcf0aa96bd58a6c27819e0c01a88c4"
+        },
+        {
+          "url": "https://www.npr.org/2026/01/31/g-s1-108168/5-year-old-liam-ramos-ice-order",
+          "mediacloud": "b6e8a2ccabd2f8ae4eb8b182469f16841f32e3a96947a84291f831e01be9b158",
+          "rss": "8db1fe6ac1bd1af563b51a59364f007b7b40eff76643e7113eacf28bf14a4192"
+        },
+        {
+          "url": "https://www.npr.org/2026/01/31/nx-s1-5690124/ice-alex-pretti-immigration-unproven-claims-dhs-enforcement-arrests",
+          "mediacloud": "6eb5cb208c366512954d00931fd234644b7ba6817186e345e9f4f79f34c94bc3",
+          "rss": "b931bfb90ee901968f4fe0ffe8128d09cdbd5572b13d45399692df5a354f3eb9"
+        },
+        {
+          "url": "https://www.npr.org/2026/01/31/nx-s1-5693767/red-hat-protest-minnesota",
+          "mediacloud": "7a32d30ac23fd0c810473606015a705c62bbe5348f35aa86c31736cafd5c4972",
+          "rss": "ccac8009ac243ffbd9e8f76fd849933d016517e29992843dfc3c71e5c2a9ab26"
+        },
+        {
+          "url": "https://www.npr.org/2026/01/31/nx-s1-5695197/as-winter-olympics-milan-protesters-call-for-ice-agents-to-leave-italy",
+          "mediacloud": "73ccba483c9b05c2f8e2f59761c820c919cc422806622f57a4c0b61280a2dc6e",
+          "rss": "3dda83d2bbec39147b31d27cc8de5506c1a6bd04ad716799c4da2a6b900c27eb"
+        },
+        {
+          "url": "https://www.npr.org/2026/01/31/nx-s1-5695221/anti-ice-protesters-call-for-national-action-against-federal-immigration-tactics",
+          "mediacloud": "c4127df9ff57a14582cb06a17eb89d79195a0d5855b511c59134fa7301122837",
+          "rss": "ae1f7e0c423877b275f911dd70b07a3ccf3681aa992ddf735d21b834258c3e9b"
+        },
+        {
+          "url": "https://www.npr.org/2026/01/31/nx-s1-5695230/don-lemon-georgia-fort-release",
+          "mediacloud": "60f446d3c8b5192d98d6b8c5f5e9a981e93323c286a5ea60b0012bfed0edccd4",
+          "rss": "8ef49aa8fc18a2bbe91e5706b2feb2f78b3195a9d25e86e19f4e676e236d833c"
+        },
+        {
+          "url": "https://www.npr.org/2026/02/01/nx-s1-5689031/minnesota-citizens-detained-ice",
+          "mediacloud": "c0e3fe46fd2173d2e9cc59b1741206c49a7ef4a9feba9921d6e2bf3b86315df1",
+          "rss": "eb25192c8d33a8721683f6a50cbc76b787477de414926d00aba90aaa9585aa87"
+        },
+        {
+          "url": "https://www.npr.org/sections/the-picture-show/2026/01/30/g-s1-108087/photos-thousands-once-again-protest-ice-in-minneapolis-and-across-the-u-s",
+          "mediacloud": "9e9551feb78148150d908c77e58459ab730e12880564686f9bd6deeb8e131d3b",
+          "rss": "dc351b62933d8a3ee919f1f8540979e548c3d55b07f0b3647fbd5d9ef10bba5f"
+        }
+      ]
+    },
+    "indexed_date": {
+      "both_equal": 0,
+      "both_different": 0,
+      "only_mediacloud": 86,
+      "only_rss": 0,
+      "examples": []
+    },
+    "language": {
+      "both_equal": 86,
+      "both_different": 0,
+      "only_mediacloud": 0,
+      "only_rss": 0,
+      "examples": []
+    },
+    "media_name": {
+      "both_equal": 86,
+      "both_different": 0,
+      "only_mediacloud": 0,
+      "only_rss": 0,
+      "examples": []
+    },
+    "media_url": {
+      "both_equal": 86,
+      "both_different": 0,
+      "only_mediacloud": 0,
+      "only_rss": 0,
+      "examples": []
+    },
+    "my_topic": {
+      "both_equal": 0,
+      "both_different": 0,
+      "only_mediacloud": 86,
+      "only_rss": 0,
+      "examples": []
+    },
+    "publish_date": {
+      "both_equal": 76,
+      "both_different": 10,
+      "only_mediacloud": 0,
+      "only_rss": 0,
+      "examples": [
+        {
+          "url": "https://abcnews.go.com/WNT/video/us-coast-guard-deploys-ice-breaking-ships-new-129685036",
+          "mediacloud": "2026-01-29",
+          "rss": "2026-01-30"
+        },
+        {
+          "url": "https://www.cbsnews.com/video/012726-cbs-evening-news/",
+          "mediacloud": "2026-01-27",
+          "rss": "2026-01-31"
+        },
+        {
+          "url": "https://www.cbsnews.com/video/012726-the-takeout/",
+          "mediacloud": "2026-01-27",
+          "rss": "2026-01-31"
+        },
+        {
+          "url": "https://www.cbsnews.com/video/012826-the-takeout/",
+          "mediacloud": "2026-01-28",
+          "rss": "2026-02-01"
+        },
+        {
+          "url": "https://www.foxnews.com/entertainment/lady-gaga-faces-backlash-after-anti-ice-rant-during-tokyo-concert",
+          "mediacloud": "2026-01-29",
+          "rss": "2026-01-31"
+        },
+        {
+          "url": "https://www.foxnews.com/media/how-trump-officials-narrative-gun-carrying-protester-minneapolis-kindled-rage-corners-right",
+          "mediacloud": "2026-01-29",
+          "rss": "2026-01-31"
+        },
+        {
+          "url": "https://www.foxnews.com/media/rand-paul-says-without-question-trust-has-been-broken-after-minnesota-shooting",
+          "mediacloud": "2026-02-01",
+          "rss": "2026-02-02"
+        },
+        {
+          "url": "https://www.foxnews.com/opinion/mariann-budde-154-bishops-question-facing-america-whose-dignity-matters",
+          "mediacloud": "2026-01-30",
+          "rss": "2026-01-31"
+        },
+        {
+          "url": "https://www.foxnews.com/politics/from-obama-award-minnesota-op-why-trump-tapped-tom-homan-on-the-ground-crackdown",
+          "mediacloud": "2026-01-30",
+          "rss": "2026-01-31"
+        },
+        {
+          "url": "https://www.foxnews.com/politics/potential-walz-successor-unleashes-states-sanctuary-policies-rule-law-matters",
+          "mediacloud": "2026-01-28",
+          "rss": "2026-02-01"
+        }
+      ]
+    },
+    "scraped_at": {
+      "both_equal": 0,
+      "both_different": 0,
+      "only_mediacloud": 86,
+      "only_rss": 0,
+      "examples": []
+    },
+    "success": {
+      "both_equal": 86,
+      "both_different": 0,
+      "only_mediacloud": 0,
+      "only_rss": 0,
+      "examples": []
+    },
+    "title": {
+      "both_equal": 69,
+      "both_different": 17,
+      "only_mediacloud": 0,
+      "only_rss": 0,
+      "examples": [
+        {
+          "url": "https://abcnews.go.com/Politics/trump-continues-defend-homan-noem-amid-immigration-enforcement/story?id=129731874",
+          "mediacloud": "Trump continues to defend Homan, Noem amid immigration enforcement backlash",
+          "rss": "Trump continues to defend Homan, Noem over immigration enforcement"
+        },
+        {
+          "url": "https://abcnews.go.com/US/5-year-liam-conejo-ramos-father-board-plane/story?id=129749784",
+          "mediacloud": "'Going home': Liam Conejo Ramos, 5, and father arrive in Minneapolis after release from detention center",
+          "rss": "Liam Conejo Ramos, 5, and father board plane for Minneapolis after detention release"
+        },
+        {
+          "url": "https://abcnews.go.com/US/video/dhs-sends-initial-report-alex-pretti-killing-congress-129632778",
+          "mediacloud": "Video DHS sends initial report on Alex Pretti killing to Congress",
+          "rss": "WATCH:  DHS sends initial report on Alex Pretti killing to Congress"
+        },
+        {
+          "url": "https://abcnews.go.com/US/video/man-arrested-after-charging-rep-omar-spraying-liquid-129637671",
+          "mediacloud": "Video Man arrested after charging Rep. Omar, spraying her with liquid during town hall",
+          "rss": "WATCH:  Man arrested after charging Rep. Omar, spraying her with liquid during town hall"
+        },
+        {
+          "url": "https://abcnews.go.com/US/video/minneapolis-mayor-frontlines-important-battle-129682246",
+          "mediacloud": "Video Minneapolis mayor: ‘We are on the frontlines of a very important battle’",
+          "rss": "WATCH:  Minneapolis mayor: ‘We are on the frontlines of a very important battle’"
+        },
+        {
+          "url": "https://abcnews.go.com/WNT/video/us-coast-guard-deploys-ice-breaking-ships-new-129685036",
+          "mediacloud": "Video US Coast Guard deploys ice breaking ships in New York City amid Arctic blast",
+          "rss": "WATCH:  US Coast Guard deploys ice breaking ships in New York City amid Arctic blast"
+        },
+        {
+          "url": "https://nypost.com/2026/01/31/us-news/anti-ice-maidens-women-dominate-roster-of-radicals-tracking-minnesota-dhs/",
+          "mediacloud": "Anti-ICE women dominate roster of radicals tracking Minnesota DHS",
+          "rss": "Anti-ICE maidens: women dominate roster of radicals tracking Minnesota DHS"
+        },
+        {
+          "url": "https://www.cbsnews.com/news/capitol-riot-prosecutors-draft-strategy-for-congress-to-probe-killings-federal-agent-conduct-in-minneapolis/",
+          "mediacloud": "Former Capitol riot prosecutors draft strategy for Congress to probe killings, federal agent conduct in Minneapolis",
+          "rss": "Ex-Capitol riot prosecutors draft strategy for Congress to probe ICE conduct"
+        },
+        {
+          "url": "https://www.cbsnews.com/news/don-lemon-in-custody-former-cnn-anchor-sources-say/",
+          "mediacloud": "Former CNN anchor Don Lemon appears in court after being arrested over protest at Minnesota church service",
+          "rss": "Journalist Don Lemon arrested after protest at Minnesota church"
+        },
+        {
+          "url": "https://www.cbsnews.com/news/jose-huerta-chuma-alex-pretti-minneapolis-shooting/",
+          "mediacloud": "Agents were pursuing an immigrant when they killed Alex Pretti. Now, he shares his story.",
+          "rss": "Immigrant pursued by federal agents before Alex Pretti's killing speaks out"
+        },
+        {
+          "url": "https://www.cbsnews.com/news/rand-paul-says-dhs-ice-must-restore-trust-minneapolis-shootings-good-pretti-60-minutes-transcript/",
+          "mediacloud": "Sen. Rand Paul says DHS, ICE must \"restore trust\" after Minneapolis shootings of Good, Pretti",
+          "rss": "Sen. Paul says DHS, ICE must \"restore trust\" after Minneapolis shootings"
+        },
+        {
+          "url": "https://www.foxnews.com/opinion/mariann-budde-154-bishops-question-facing-america-whose-dignity-matters",
+          "mediacloud": "RT. REV. MARIANN BUDDE, 153 BISHOPS: The question facing America — Whose dignity matters?",
+          "rss": "RT. REV. MARIANN BUDDE, 154 BISHOPS: The question facing America--whose dignity matters"
+        },
+        {
+          "url": "https://www.foxnews.com/politics/don-lemon-faces-federal-criminal-charges-after-anti-ice-protest-disrupted-minnesota-church",
+          "mediacloud": "Don Lemon could face up to a year in prison if convicted on criminal charges",
+          "rss": "Don Lemon faces federal criminal charges after anti-ICE protest disrupted Minnesota church"
+        },
+        {
+          "url": "https://www.nbcnews.com/news/us-news/don-lemon-arrested-federal-authorities-attorney-says-rcna256680",
+          "mediacloud": "Don Lemon arrested after covering protest at Minnesota church",
+          "rss": "Don Lemon arrested by federal authorities in connection with Minnesota church protest"
+        },
+        {
+          "url": "https://www.nbcnews.com/news/us-news/judge-allows-ices-operation-metro-surge-continue-minnesota-rcna256847",
+          "mediacloud": "Judge allows ICE's Operation Metro Surge to continue in Minnesota",
+          "rss": "Judge allows ICE’s Operation Metro Surge to continue in Minnesota"
+        },
+        {
+          "url": "https://www.nbcnews.com/politics/donald-trump/trump-sue-trevor-noah-grammy-joke-epstein-island-rcna257019",
+          "mediacloud": "Trump threatens to sue Trevor Noah over joke about Jeffrey Epstein's island",
+          "rss": "Trump threatens to sue Trevor Noah over joke about Epstein's island"
+        },
+        {
+          "url": "https://www.nbcnews.com/politics/immigration/5-year-old-liam-conejo-ramos-returns-minnesota-rcna256933",
+          "mediacloud": "5-year-old boy and his father return to Minnesota after being released from immigration custody",
+          "rss": "5-year-old boy and father return to Minnesota after release from immigration custody"
+        }
+      ]
+    },
+    "url": {
+      "both_equal": 86,
+      "both_different": 0,
+      "only_mediacloud": 0,
+      "only_rss": 0,
+      "examples": []
+    }
+  }
+}
