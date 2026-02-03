@@ -1,8 +1,19 @@
 # .github/workflows/rss-pipeline.yml
-# RSS-based news collection pipeline
-#
-# Triggered via cron-job.org - runs daily
-# Fetches RSS feeds, filters by topic, uploads to gists
+# Triggered via cron-job.org - runs many times daily
+# Fetches RSS feeds, saves everything to raw archive, generates topic-specific clean files
+
+
+# ----------------------------------------------------------------
+# Workflow architecture (for RSS collector) with example numbers
+# ----------------------------------------------------------------
+  
+# RSS Feeds (290 stories) # collected with getnews/fetch-raw.py
+#     ↓ [time filter only: last 5 days]
+# tmp-news.json (temporary) # downloaded to GitHub runner, deleted post-run
+#     ↓ [save EVERYTHING - no topic filtering]
+# raw.jsonl (permanent archive: ALL stories) # complete historical record
+#     ↓ [strict quality filters per topic] 
+# clean-{topic}.jsonl (curated outputs) # regenerated from raw.jsonl each run
 
 name: "RSS News Pipeline"
 

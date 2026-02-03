@@ -82,13 +82,6 @@ def is_english(story: dict) -> bool:
         return True  # Assume English on detection failure
 
 
-def get_all_keywords() -> list[str]:
-    """Collect all keywords from all topics."""
-    all_kw = set()
-    for topic_config in TOPICS.values():
-        all_kw.update(topic_config["keywords"])
-    return list(all_kw)
-
 
 def format_story_for_raw(story: dict) -> dict:
     """Convert RSS story to raw.jsonl schema."""
@@ -224,16 +217,13 @@ def main() -> int:
     stories = load_stories()
     print(f"Loaded {len(stories)} stories from {RAW_STORIES_FILE}")
 
-    # Collect all keywords from all topics
-    all_keywords = get_all_keywords()
-    print(f"Keywords from all topics: {len(all_keywords)}")
+    # Save ALL stories to raw.jsonl (no topic filtering)
+    print(f"\n=== SAVING ALL STORIES TO RAW ARCHIVE ===")
+    print(f"Archiving all {len(stories)} stories (no topic filtering)")
+    print("  → Future-proof: enables any topic analysis retroactively")
 
-    # Filter stories matching ANY topic's keywords
-    matching = [s for s in stories if matches_keywords(s, all_keywords)]
-    print(f"Stories matching any topic: {len(matching)}")
-
-    # Format for raw.jsonl
-    formatted = [format_story_for_raw(s) for s in matching]
+    # Format all stories for raw.jsonl
+    formatted = [format_story_for_raw(s) for s in stories]
 
     # Load existing raw data
     existing_raw = []
@@ -262,8 +252,15 @@ def main() -> int:
     # Merge and dedupe by URL
     existing_urls = {r.get("url") for r in existing_raw}
     new_records = [r for r in formatted if r.get("url") not in existing_urls]
+    
+    print(f"\n=== NEW DATA SUMMARY ===")
     print(f"New records (after dedupe): {len(new_records)}")
-
+    if len(new_records) == 0:
+        print(f"  → All {len(formatted)} stories were already in the dataset")
+        print("  → No duplicates - RSS feeds contained no new content")
+    else:
+        print(f"  → Added {len(new_records)} new stories to archive")
+    
     all_raw = existing_raw + new_records
 
     # Save raw.jsonl
@@ -273,13 +270,14 @@ def main() -> int:
         "last_updated": datetime.now(timezone.utc).isoformat(),
     }
     save_jsonl(local_raw, all_raw, raw_meta)
-    print(f"\nSaved raw.jsonl: {len(all_raw)} records")
+    print(f"\nSaved raw.jsonl: {len(all_raw)} total records")
 
     # Generate clean files for each active topic
     topic_keys = ACTIVE_TOPICS or list(TOPICS.keys())
     clean_files = {}
 
-    print(f"\nGenerating clean files for {len(topic_keys)} topic(s)...")
+    print(f"\n=== REGENERATING CLEAN FILES (from all {len(all_raw)} records) ===")
+    print(f"Processing {len(topic_keys)} topic(s)...")
     for topic_name in topic_keys:
         if topic_name not in TOPICS:
             print(f"  Unknown topic: {topic_name}")
@@ -310,7 +308,10 @@ def main() -> int:
         save_jsonl(local_clean, topic_clean, clean_meta)
         clean_files[clean_filename] = local_clean
 
+        filtered_out = len(topic_raw) - len(topic_clean)
         print(f"  {topic_name}: {len(topic_raw)} raw → {len(topic_clean)} clean")
+        if filtered_out > 0:
+            print(f"    └─ {filtered_out} filtered out (non-English, excluded domains, or strict keyword mismatch)")
 
     print(f"\nAll files saved to {local_dir}/")
 
@@ -333,15 +334,19 @@ def main() -> int:
 
     # Summary
     print("\n" + "=" * 50)
-    print("SUMMARY")
+    print("FINAL SUMMARY")
     print("=" * 50)
-    print(f"  Raw: +{len(new_records)} new → {len(all_raw)} total")
+    print(f"  Fetched: {len(stories)} stories from RSS feeds")
+    print(f"  Archived: {len(formatted)} stories (saves everything for future analysis)")
+    print(f"  New records: +{len(new_records)} added → {len(all_raw)} total in archive")
+    print("")
+    print("  Clean files (from entire archive):")
     for topic_name in topic_keys:
         if topic_name in TOPICS:
             keywords = TOPICS[topic_name]["keywords"]
             topic_raw = [r for r in all_raw if matches_keywords(r, keywords)]
             topic_clean = [r for r in topic_raw if matches_strict_keywords(r, keywords)]
-            print(f"  {topic_name}: {len(topic_clean)} clean (from {len(topic_raw)} matching)")
+            print(f"    {topic_name}: {len(topic_clean)} stories (from {len(topic_raw)} raw matches)")
 
     return 0
 
