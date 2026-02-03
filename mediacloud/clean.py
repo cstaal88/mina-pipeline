@@ -160,7 +160,40 @@ def combine_raw_files(topic: str) -> Path:
     Merges urls.jsonl (publish_date, media_url, language, etc.) with
     articles.jsonl (description, success, etc.) by URL to create
     complete self-contained records.
+    
+    IMPORTANT: This function ACCUMULATES data - it loads existing records
+    from _combined.jsonl (which may have been downloaded from gist) and
+    ADDS new records, deduplicating by URL.
     """
+    combined_file = get_combined_raw_file(topic)
+    
+    # Load existing records from _combined.jsonl (may have been downloaded from gist)
+    existing_records = []
+    existing_urls = set()
+    if combined_file.exists():
+        try:
+            with open(combined_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        record = json.loads(line)
+                        # Skip meta header
+                        if record.get("_meta"):
+                            continue
+                        url = record.get("url")
+                        if url:
+                            existing_records.append(record)
+                            existing_urls.add(url)
+                    except json.JSONDecodeError:
+                        continue
+        except Exception as e:
+            print(f"Warning: Could not load existing _combined.jsonl: {e}")
+    
+    print(f"  Loaded {len(existing_records)} existing records from _combined.jsonl")
+    
+    # Load new scraped data from raw/{topic}/{date}/ directories
     articles = load_all_from_raw(topic, "articles.jsonl")
     urls = load_all_from_raw(topic, "urls.jsonl")
     dates = get_dates_collected(topic)
@@ -168,27 +201,47 @@ def combine_raw_files(topic: str) -> Path:
     # Build URL index from urls.jsonl
     urls_by_url = build_url_index(urls)
     
-    # Merge: start with urls data, overlay articles data
-    combined_records = []
+    # Merge new articles with their URL data, skipping duplicates
+    new_count = 0
     for article in articles:
         url = article.get("url")
         if not url:
             continue
         
+        # Skip if already exists
+        if url in existing_urls:
+            continue
+        
         # Merge: urls fields first, then article fields (article overwrites shared keys like 'title')
         url_data = urls_by_url.get(url, {})
         merged = {**url_data, **article}
-        combined_records.append(merged)
+        
+        # Mark as collected from MediaCloud
+        merged["collected_with"] = "mediacloud"
+        merged["collected_at"] = datetime.now().isoformat()
+        
+        existing_records.append(merged)
+        existing_urls.add(url)
+        new_count += 1
     
-    combined_file = get_combined_raw_file(topic)
+    print(f"  Added {new_count} new records (total: {len(existing_records)})")
     
+    # Collect all dates for meta header
+    all_dates = set(dates)
+    for record in existing_records:
+        pub_date = record.get("publish_date", "")[:10]
+        if pub_date:
+            all_dates.add(pub_date)
+    sorted_dates = sorted(all_dates)
+    
+    # Write all records
     with open(combined_file, "w", encoding="utf-8") as f:
         # Write meta header first
-        meta = create_meta_header(topic, len(combined_records), dates)
+        meta = create_meta_header(topic, len(existing_records), sorted_dates)
         f.write(json.dumps(meta, ensure_ascii=False) + "\n")
         
-        # Write all merged records
-        for record in combined_records:
+        # Write all records
+        for record in existing_records:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
     
     return combined_file

@@ -222,6 +222,66 @@ def main():
         print_histogram("Stories per date", stats['date_counts'])
         print_media_stats(stats['media_stats'])
 
+    # Analyze mediacloud_raw_{topic}.jsonl files (per-topic raw archives)
+    for topic in TOPICS:
+        mc_filename = f"mediacloud_raw_{topic}.jsonl"
+        if mc_filename in files:
+            print(f"\n{'='*60}")
+            print(f"MEDIACLOUD RAW DATA: {topic}")
+            print("=" * 60)
+
+            mc_entries = parse_jsonl(files[mc_filename])
+            mc_stats = analyze_entries(mc_entries, is_raw=True)
+
+            print(f"\n  Total entries: {mc_stats['count']}")
+            if mc_stats['date_range'].get('earliest'):
+                print(f"  Date range: {mc_stats['date_range']['earliest']} to {mc_stats['date_range']['latest']}")
+
+            print_histogram("Stories per date", mc_stats['date_counts'])
+            print_media_stats(mc_stats['media_stats'])
+
+            # Sample
+            if mc_stats.get('samples'):
+                print(f"\n  Sample MediaCloud record:")
+                s = mc_stats['samples'][0]
+                print(f"    Title: {s.get('title', 'N/A')[:70]}...")
+                print(f"    Date: {s.get('publish_date', 'N/A')}")
+                print(f"    URL: {s.get('url', 'N/A')[:60]}...")
+            elif mc_stats['count'] == 0:
+                print(f"\n  No MediaCloud records yet for {topic}")
+    
+    # Also check for legacy single mediacloud_raw.jsonl (backwards compat)
+    if 'mediacloud_raw.jsonl' in files:
+        print(f"\n{'='*60}")
+        print("MEDIACLOUD RAW DATA (legacy)")
+        print("=" * 60)
+
+        mc_entries = parse_jsonl(files['mediacloud_raw.jsonl'])
+        mc_stats = analyze_entries(mc_entries, is_raw=True)
+
+        print(f"\n  Total entries: {mc_stats['count']}")
+        if mc_stats['date_range'].get('earliest'):
+            print(f"  Date range: {mc_stats['date_range']['earliest']} to {mc_stats['date_range']['latest']}")
+
+        # Compare RSS vs MediaCloud coverage
+        if 'raw.jsonl' in files and 'stats' in locals():
+            print(f"\n  Coverage comparison:")
+            print(f"    RSS stories: {stats['count']}")
+            print(f"    MediaCloud stories: {mc_stats['count']}")
+            if stats['count'] > 0 and mc_stats['count'] > 0:
+                ratio = mc_stats['count'] / stats['count']
+                print(f"    MediaCloud/RSS ratio: {ratio:.2f}")
+
+        # Sample
+        if mc_stats.get('samples'):
+            print(f"\n  Sample MediaCloud record:")
+            s = mc_stats['samples'][0]
+            print(f"    Title: {s.get('title', 'N/A')[:70]}...")
+            print(f"    Date: {s.get('publish_date', 'N/A')}")
+            print(f"    URL: {s.get('url', 'N/A')[:60]}...")
+        elif mc_stats['count'] == 0:
+            print(f"\n  No MediaCloud records yet (empty gist file)")
+
     # Analyze each clean file
     for topic in TOPICS:
         filename = f"clean-{topic}.jsonl"

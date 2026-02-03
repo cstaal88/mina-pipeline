@@ -68,14 +68,17 @@ jobs:
             GIST_ID="16c75a94d276d2800a44e3c2437f40e4"
             
             # Download existing mediacloud raw data (the accumulating archive)
+            # Each topic has its own raw file to avoid overwriting
             RAW_DIR="mediacloud/raw/${TOPIC}"
             mkdir -p "$RAW_DIR"
             RAW_COMBINED="$RAW_DIR/_combined.jsonl"
-            if gh gist view "$GIST_ID" -f "mediacloud_raw.jsonl" > "$RAW_COMBINED" 2>/dev/null; then
+            GIST_RAW_FILE="mediacloud_raw_${TOPIC}.jsonl"
+            if gh gist view "$GIST_ID" -f "$GIST_RAW_FILE" > "$RAW_COMBINED" 2>/dev/null; then
               EXISTING_RAW=$(wc -l < "$RAW_COMBINED")
-              echo "Downloaded $EXISTING_RAW existing MediaCloud raw records"
+              echo "Downloaded $EXISTING_RAW existing MediaCloud raw records for $TOPIC"
             else
-              echo "No existing MediaCloud raw data in unified gist"
+              echo "No existing MediaCloud raw data for $TOPIC in unified gist"
+              touch "$RAW_COMBINED"  # Create empty file
             fi
             
             # Clean dir starts empty - will be regenerated from raw
@@ -84,12 +87,12 @@ jobs:
             rm -f "$CLEAN_DIR/articles-${TOPIC}.jsonl"
             
             # Run pipeline (3-day window handles missed runs and reduces API calls)
-            python3 mediacloud/run-pipeline.py --topic "$TOPIC" --auto --days 3 || echo "Pipeline for $TOPIC exited with code $?"
+            python3 mediacloud/run-pipeline.py --topic "$TOPIC" --auto --days 2 || echo "Pipeline for $TOPIC exited with code $?"
             
-            # Upload mediacloud_raw.jsonl (the full archive) to unified gist
+            # Upload mediacloud_raw_{topic}.jsonl (the full raw archive for this topic)
             if [ -f "$RAW_COMBINED" ]; then
-              echo "Uploading mediacloud_raw.jsonl to unified gist..."
-              gh gist edit "$GIST_ID" -f "mediacloud_raw.jsonl" "$RAW_COMBINED"
+              echo "Uploading $GIST_RAW_FILE to unified gist..."
+              gh gist edit "$GIST_ID" -f "$GIST_RAW_FILE" "$RAW_COMBINED"
             fi
             
             # Upload mediacloud_clean_{topic}.jsonl (regenerated from raw)
