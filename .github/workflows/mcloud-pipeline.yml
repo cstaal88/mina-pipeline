@@ -57,6 +57,21 @@ jobs:
           
           echo "=== Running pipeline for topics: $TOPICS ==="
           
+          # Use unified gist for all MediaCloud data
+          GIST_ID="16c75a94d276d2800a44e3c2437f40e4"
+          
+          # Download shared mediacloud_raw.jsonl ONCE before processing any topics
+          # All topics append to this single file
+          SHARED_RAW="mediacloud/raw/_combined.jsonl"
+          mkdir -p "mediacloud/raw"
+          if gh gist view "$GIST_ID" -f "mediacloud_raw.jsonl" > "$SHARED_RAW" 2>/dev/null; then
+            EXISTING_RAW=$(wc -l < "$SHARED_RAW")
+            echo "Downloaded $EXISTING_RAW existing MediaCloud raw records"
+          else
+            echo "No existing mediacloud_raw.jsonl in gist (starting fresh)"
+            touch "$SHARED_RAW"
+          fi
+          
           for TOPIC in $TOPICS; do
             echo ""
             echo "========================================"
@@ -64,47 +79,37 @@ jobs:
             echo "Started: $(date -u +%Y-%m-%d' '%H:%M' UTC')"
             echo "========================================"
             
-            # Use unified gist for all MediaCloud data
-            GIST_ID="16c75a94d276d2800a44e3c2437f40e4"
-            
-            # Download existing mediacloud raw data (the accumulating archive)
-            # Each topic has its own raw file to avoid overwriting
+            # Each topic has its own raw folder for date-based scraping
             RAW_DIR="mediacloud/raw/${TOPIC}"
             mkdir -p "$RAW_DIR"
-            RAW_COMBINED="$RAW_DIR/_combined.jsonl"
-            GIST_RAW_FILE="mediacloud_raw_${TOPIC}.jsonl"
-            if gh gist view "$GIST_ID" -f "$GIST_RAW_FILE" > "$RAW_COMBINED" 2>/dev/null; then
-              EXISTING_RAW=$(wc -l < "$RAW_COMBINED")
-              echo "Downloaded $EXISTING_RAW existing MediaCloud raw records for $TOPIC"
-            else
-              echo "No existing MediaCloud raw data for $TOPIC in unified gist"
-              touch "$RAW_COMBINED"  # Create empty file
-            fi
+            
+            # Copy shared raw to topic's _combined.jsonl so combine_raw_files() can merge
+            cp "$SHARED_RAW" "$RAW_DIR/_combined.jsonl"
             
             # Clean dir starts empty - will be regenerated from raw
             CLEAN_DIR="mediacloud/clean"
             mkdir -p "$CLEAN_DIR"
             rm -f "$CLEAN_DIR/articles-${TOPIC}.jsonl"
             
-            # Run pipeline (3-day window handles missed runs and reduces API calls)
-            python3 mediacloud/run-pipeline.py --topic "$TOPIC" --auto --days 2 || echo "Pipeline for $TOPIC exited with code $?"
+            # Run pipeline (NOTE: --days 1 for testing, increase when working)
+            python3 mediacloud/run-pipeline.py --topic "$TOPIC" --auto --days 1 || echo "Pipeline for $TOPIC exited with code $?"
             
-            # Upload mediacloud_raw_{topic}.jsonl (the full raw archive for this topic)
-            if [ -f "$RAW_COMBINED" ]; then
-              echo "Uploading $GIST_RAW_FILE to unified gist..."
-              gh gist edit "$GIST_ID" -f "$GIST_RAW_FILE" "$RAW_COMBINED"
-            fi
-            
-            # Upload mediacloud_clean_{topic}.jsonl (regenerated from raw)
-            CLEAN_FILE="$CLEAN_DIR/articles-${TOPIC}.jsonl"
-            if [ -f "$CLEAN_FILE" ]; then
-              echo "Uploading mediacloud_clean_${TOPIC}.jsonl to unified gist..."
-              gh gist edit "$GIST_ID" -f "mediacloud_clean_${TOPIC}.jsonl" "$CLEAN_FILE"
-              echo "✓ Unified gist updated: https://gist.github.com/$GIST_ID"
+            # After pipeline, topic's _combined.jsonl has new records merged
+            # Copy back to shared file for next topic
+            if [ -f "$RAW_DIR/_combined.jsonl" ]; then
+              cp "$RAW_DIR/_combined.jsonl" "$SHARED_RAW"
             fi
             
             echo "Completed: $TOPIC"
           done
+          
+          # Upload shared mediacloud_raw.jsonl ONCE after all topics
+          if [ -f "$SHARED_RAW" ]; then
+            echo ""
+            echo "Uploading mediacloud_raw.jsonl to unified gist..."
+            gh gist edit "$GIST_ID" -f "mediacloud_raw.jsonl" "$SHARED_RAW"
+            echo "✓ Unified gist updated: https://gist.github.com/$GIST_ID"
+          fi
           
           echo ""
           echo "=== All topics completed ==="
