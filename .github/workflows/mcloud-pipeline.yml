@@ -92,7 +92,7 @@ jobs:
             rm -f "$CLEAN_DIR/articles-${TOPIC}.jsonl"
             
             # Run pipeline (NOTE: --days 1 for testing, increase when working)
-            python3 mediacloud/run-pipeline.py --topic "$TOPIC" --auto --days 1 || echo "Pipeline for $TOPIC exited with code $?"
+            python3 mediacloud/run-pipeline.py --topic "$TOPIC" --auto --days 2 || echo "Pipeline for $TOPIC exited with code $?"
             
             # After pipeline, topic's _combined.jsonl has new records merged
             # Copy back to shared file for next topic
