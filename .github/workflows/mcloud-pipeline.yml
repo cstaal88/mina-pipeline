@@ -1,12 +1,16 @@
-# .github/workflows/fetch.yml
+# .github/workflows/mcloud-pipeline.yml
 # Automated MediaCloud news collection pipeline
 #
-# Triggered via cron-job.org - runs BOTH topics sequentially
-# Each run collects and cleans news for all topics, then uploads to gists
+# Runs daily at 6:17 AM UTC (7:17 CET) via GitHub cron
+# Also supports manual trigger via workflow_dispatch
+# consider cron-job.org in the future ...
 
 name: "MediaCloud News Pipeline"
 
 on:
+  schedule:
+    # Daily at 6:17 AM UTC (off-peak, after overnight indexing)
+    - cron: '17 6 * * *'
   workflow_dispatch:
     inputs:
       topic:

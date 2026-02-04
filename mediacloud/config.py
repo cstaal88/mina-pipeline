@@ -54,26 +54,25 @@ DEFAULT_TOPIC = "minneapolis-ice"
 #   - gist_id_clean: Gist ID for cleaned/filtered data
 
 # Common outlets used across topics
-# NOTE: Temporarily limited for testing - uncomment rest when working
 ALL_OUTLETS = {
-    # "foxnews.com": 1092,
-    # "abcnews.go.com": 19260,
-    # "apnews.com": 106145,
-    # "bbc.com": 932549,
-    # "cbsnews.com": 1752,
-    # "cnn.com": 1095,
+    "foxnews.com": 1092,
+    "abcnews.go.com": 19260,
+    "apnews.com": 106145,
+    # "bbc.com": 932549,  # UK outlet - skip for US focus
+    "cbsnews.com": 1752,
+    "cnn.com": 1095,
     "dailywire.com": 269352,
-    # "theguardian.com": 300560,  # UK main; use 1751 for Guardian US
-    # "msnbc.com": 293951,
+    # "theguardian.com": 300560,  # UK outlet - skip for US focus
+    "msnbc.com": 293951,
     "nbcnews.com": 25499,
-    # "newsmax.com": 25349,
-    # "nypost.com": 7,
-    # "nytimes.com": 1,
-    # "npr.org": 1096,
-    # "pbs.org": 1093,
+    "newsmax.com": 25349,
+    "nypost.com": 7,
+    "nytimes.com": 1,
+    "npr.org": 1096,
+    # "pbs.org": 1093,  # Low volume, skip
     "usatoday.com": 4,
-    # "wsj.com": 22732,
-    # "washingtonpost.com": 2,
+    "wsj.com": 22732,
+    "washingtonpost.com": 2,
 }
 
 TOPICS = {
