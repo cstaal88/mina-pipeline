@@ -51,8 +51,8 @@ jobs:
             # Single topic specified
             TOPICS="$INPUT_TOPIC"
           else
-            # Run all topics
-            TOPICS="minneapolis-ice greenland-trump"
+            # Default: only minneapolis-ice (greenland-trump dropped)
+            TOPICS="minneapolis-ice"
           fi
           
           echo "=== Running pipeline for topics: $TOPICS ==="
@@ -91,8 +91,8 @@ jobs:
             mkdir -p "$CLEAN_DIR"
             rm -f "$CLEAN_DIR/articles-${TOPIC}.jsonl"
             
-            # Run pipeline (NOTE: --days 1 for testing, increase when working)
-            python3 mediacloud/run-pipeline.py --topic "$TOPIC" --auto --days 2 || echo "Pipeline for $TOPIC exited with code $?"
+            # Run pipeline with --nofilter to just collect raw data (no relevance filtering)
+            python3 mediacloud/run-pipeline.py --topic "$TOPIC" --auto --days 2 --nofilter || echo "Pipeline for $TOPIC exited with code $?"
             
             # After pipeline, topic's _combined.jsonl has new records merged
             # Copy back to shared file for next topic

@@ -357,6 +357,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Show what would be written but don't actually write.",
     )
     p.add_argument(
+        "--nofilter",
+        action="store_true",
+        help="Only combine raw files, skip filtering. Use for raw archival.",
+    )
+    p.add_argument(
         "--list-topics",
         action="store_true",
         help="List available topics and exit.",
@@ -468,6 +473,14 @@ def main():
 
     if args.stats or args.dry_run:
         raise SystemExit(print_output_stats(topic_config, show_all=args.all))
+
+    # --nofilter mode: just combine raw files, skip all filtering
+    if args.nofilter:
+        print(f"\nTopic: {topic}")
+        print("Mode: --nofilter (combine raw only, no filtering)")
+        combined_raw = combine_raw_files(topic)
+        print(f"Combined raw: {combined_raw}")
+        return
 
     start_time = datetime.now()
     logger = setup_logging()

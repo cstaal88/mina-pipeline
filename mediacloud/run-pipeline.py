@@ -198,6 +198,8 @@ Examples:
                         help="Only run data collection, skip cleaning")
     parser.add_argument("--clean-only", action="store_true",
                         help="Only run cleaning, skip collection")
+    parser.add_argument("--nofilter", action="store_true",
+                        help="Combine raw files but skip filtering (raw archival mode)")
     parser.add_argument("--wait", action="store_true",
                         help="Wait for other MediaCloud processes to finish first")
     parser.add_argument("--at", metavar="HH:MM",
@@ -280,6 +282,8 @@ Examples:
     # Step 3: Clean data
     if not args.collect_only:
         clean_args = topic_args.copy()
+        if args.nofilter:
+            clean_args.append("--nofilter")
 
         rc = run_step("Clean and filter data", CLEAN_SCRIPT, clean_args)
         if rc != 0:
