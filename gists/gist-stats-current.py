@@ -253,7 +253,7 @@ def main():
     # Also check for legacy single mediacloud_raw.jsonl (backwards compat)
     if 'mediacloud_raw.jsonl' in files:
         print(f"\n{'='*60}")
-        print("MEDIACLOUD RAW DATA (legacy)")
+        print("MEDIACLOUD RAW DATA")
         print("=" * 60)
 
         mc_entries = parse_jsonl(files['mediacloud_raw.jsonl'])
