@@ -23,3 +23,6 @@ mediacloud/collect/.fetch-checkpoint*.json
 # IDE
 .vscode/
 .idea/
+
+# Local notes
+notes/
