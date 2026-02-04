@@ -34,6 +34,7 @@ from config import (
     RAW_STORIES_FILE,
     TEST_DIR,
     EXCLUDED_FROM_CLEAN,
+    GLOBAL_FILTERS,
 )
 
 
@@ -72,6 +73,16 @@ def matches_strict_keywords(story: dict, keywords: list[str]) -> bool:
     return False
 
 
+def has_excluded_terms(story: dict, exclude_terms: list[str]) -> bool:
+    """Check if story contains any excluded terms."""
+    if not exclude_terms:
+        return False
+    title = (story.get("title") or "").lower()
+    summary = (story.get("summary") or story.get("description") or "").lower()
+    text = f"{title} {summary}"
+    return any(term in text for term in exclude_terms)
+
+
 def is_english(story: dict) -> bool:
     """Check if story is in English using langdetect."""
     title = story.get("title") or ""
@@ -85,6 +96,35 @@ def is_english(story: dict) -> bool:
         return detect(text) == "en"
     except LangDetectException:
         return True  # Assume English on detection failure
+
+
+def passes_global_filters(story: dict) -> tuple[bool, str]:
+    """
+    Check if story passes all global filters.
+    Returns (passed, reason) where reason explains why it failed.
+    """
+    # Check description requirement
+    if GLOBAL_FILTERS.get("require_description", False):
+        desc = story.get("summary") or story.get("description") or ""
+        if not desc.strip():
+            return False, "no_description"
+    
+    # Check English requirement
+    if GLOBAL_FILTERS.get("require_english", False):
+        if not is_english(story):
+            return False, "not_english"
+    
+    # Check promo terms
+    promo_terms = GLOBAL_FILTERS.get("promo_terms", [])
+    if promo_terms:
+        title = (story.get("title") or "").lower()
+        summary = (story.get("summary") or story.get("description") or "").lower()
+        text = f"{title} {summary}"
+        for term in promo_terms:
+            if term in text:
+                return False, f"promo:{term}"
+    
+    return True, ""
 
 
 
@@ -306,15 +346,17 @@ def main() -> int:
             continue
 
         keywords = TOPICS[topic_name]["keywords"]
+        exclude_terms = TOPICS[topic_name].get("exclude_terms", [])
 
         # Filter raw records for this topic (loose match first, then strict)
-        # Also exclude domains in EXCLUDED_FROM_CLEAN and non-English content
+        # Apply: strict keywords, excluded domains, global filters, topic-specific exclusions
         topic_raw = [r for r in all_raw if matches_keywords(r, keywords)]
         topic_clean = [
             r for r in topic_raw
             if matches_strict_keywords(r, keywords)
             and r.get("media_url", "") not in EXCLUDED_FROM_CLEAN
-            and is_english(r)
+            and passes_global_filters(r)[0]
+            and not has_excluded_terms(r, exclude_terms)
         ]
 
         clean_filename = f"clean-{topic_name}.jsonl"

@@ -56,6 +56,9 @@ TOPICS = {
             "pretti", "alex pretti",
             "ice shooting", "ice raid",
         ],
+        "exclude_terms": [
+            "hockey", "nhl", "wild", "puck", "rink", "skate",
+        ],
     },
     "greenland-trump": {
         "keywords": [
@@ -175,6 +178,31 @@ OUTLETS = {
 EXCLUDED_FROM_CLEAN = [
     "usatoday.com",
 ]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GLOBAL FILTERS (applied to ALL topics)
+# ─────────────────────────────────────────────────────────────────────────────
+# These rules filter out non-news content regardless of topic
+
+GLOBAL_FILTERS = {
+    # Must have a description/summary (not null or empty)
+    "require_description": True,
+    
+    # Must be in English
+    "require_english": True,
+    
+    # Terms that indicate TV promos, ads, or non-news content
+    "promo_terms": [
+        "watch live", "live stream", "tune in",
+        "tonight on", "this week on", "coming up on",
+        "don't miss", "catch the",
+        "subscribe now", "sign up for",
+        "exclusive interview", "full episode",
+        "sponsored content", "paid content", "advertisement",
+        "listen to the podcast", "new episode",
+        "newsletter", "breaking news alert",
+    ],
+}
 
 # Which outlets to fetch (list of keys, or None for all)
 ACTIVE_OUTLETS = None
