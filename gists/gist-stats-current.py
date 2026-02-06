@@ -263,6 +263,9 @@ def main():
         if mc_stats['date_range'].get('earliest'):
             print(f"  Date range: {mc_stats['date_range']['earliest']} to {mc_stats['date_range']['latest']}")
 
+        print_histogram("Stories per date", mc_stats['date_counts'])
+        print_media_stats(mc_stats['media_stats'])
+
         # Compare RSS vs MediaCloud coverage
         if 'raw.jsonl' in files and 'stats' in locals():
             print(f"\n  Coverage comparison:")
