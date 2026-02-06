@@ -290,20 +290,25 @@ def main() -> int:
             existing_raw = parse_jsonl_content(content)
             print(f"  Existing records: {len(existing_raw)}")
             
-        # Also download and merge MediaCloud data
+        # Also download and merge MediaCloud data (dedupe by URL)
         print("\nDownloading MediaCloud data to merge...")
         mediacloud_content = gist_download("mediacloud_raw.jsonl")
         if mediacloud_content:
             mediacloud_records = parse_jsonl_content(mediacloud_content)
-            print(f"  MediaCloud records to merge: {len(mediacloud_records)}")
+            print(f"  MediaCloud records available: {len(mediacloud_records)}")
             
             # Add source identifier to MediaCloud records if not present
             for record in mediacloud_records:
                 if "collected_with" not in record:
                     record["collected_with"] = "mediacloud"
             
-            existing_raw.extend(mediacloud_records)
-            print(f"  Total after MediaCloud merge: {len(existing_raw)}")
+            # Only add MC records not already in raw.jsonl (by URL)
+            existing_urls = {r.get("url") for r in existing_raw}
+            new_mc = [r for r in mediacloud_records if r.get("url") not in existing_urls]
+            existing_raw.extend(new_mc)
+            print(f"  New MediaCloud records merged: {len(new_mc)}")
+            print(f"  Skipped (already in raw): {len(mediacloud_records) - len(new_mc)}")
+            print(f"  Total after merge: {len(existing_raw)}")
         else:
             print("  No MediaCloud data found to merge")
     else:
