@@ -16,6 +16,7 @@ Usage:
     python3 run-pipeline.py --auto                   # no prompts (for cron/GitHub Actions)
     python3 run-pipeline.py --wait                   # wait for other mcloud processes
     python3 run-pipeline.py --at 03:00               # run at specific time
+    python3 run-pipeline.py --since 2025-12-26 --until 2026-01-01  # specific date range
 
 IMPORTANT: Automated workflows (GitHub Actions) should ALWAYS pass --topic explicitly.
 """
@@ -188,12 +189,19 @@ Examples:
   python3 run-pipeline.py --clean-only             # Just clean existing data
   python3 run-pipeline.py --auto                   # No prompts (for automation)
   python3 run-pipeline.py --days 2                 # Trial run: only last 2 days
+  python3 run-pipeline.py --since 2025-12-26 --until 2026-01-01  # Specific date range
 """
     )
     parser.add_argument("--topic", type=str, default=None,
                         help=f"Topic to process (default: {DEFAULT_TOPIC})")
     parser.add_argument("--days", type=int, default=None,
                         help="Only collect N most recent days (for trial runs)")
+    parser.add_argument("--since", type=str, default=None,
+                        help="Start date YYYY-MM-DD (e.g., 2025-12-26)")
+    parser.add_argument("--until", type=str, default=None,
+                        help="End date YYYY-MM-DD (default: today)")
+    parser.add_argument("--test-one-outlet", action="store_true",
+                        help="Only use first outlet (for testing without burning credits)")
     parser.add_argument("--collect-only", action="store_true",
                         help="Only run data collection, skip cleaning")
     parser.add_argument("--clean-only", action="store_true",
@@ -253,10 +261,16 @@ Examples:
     elif args.at:
         wait_until_time(args.at)
 
-    # Build args for fetch script (--days only applies to fetch)
+    # Build args for fetch script (--days, --since, --until only apply to fetch)
     fetch_args = ["--topic", topic]
     if args.days:
         fetch_args.extend(["--days", str(args.days)])
+    if args.since:
+        fetch_args.extend(["--start", args.since])
+    if args.until:
+        fetch_args.extend(["--end", args.until])
+    if args.test_one_outlet:
+        fetch_args.append("--test-one-outlet")
     
     # Build args for other scripts (just topic)
     topic_args = ["--topic", topic]

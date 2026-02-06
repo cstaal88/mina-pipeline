@@ -210,6 +210,7 @@ def main():
     parser.add_argument("--start", type=str, help="Start date YYYY-MM-DD (overrides topic config)")
     parser.add_argument("--end", type=str, help="End date YYYY-MM-DD (default: today)")
     parser.add_argument("--days", type=int, help="Only collect N most recent days (recommended: 2-3)")
+    parser.add_argument("--test-one-outlet", action="store_true", help="Only use first outlet (for testing)")
     parser.add_argument("--list-topics", action="store_true", help="List available topics and exit")
     args = parser.parse_args()
 
@@ -228,6 +229,12 @@ def main():
     topic = topic_config["name"]
     query = topic_config["query"]
     source_ids = topic_config["outlets"]
+    
+    # Test mode: only use first outlet
+    if args.test_one_outlet:
+        first_key = next(iter(source_ids.keys()))
+        source_ids = {first_key: source_ids[first_key]}
+        print(f"TEST MODE: Using only 1 outlet ({first_key})")
 
     # Determine date range
     end_date = dt.date.today()
