@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """
-Check for duplicate records in raw.jsonl from the gist.
-Shows how many unique vs duplicate records exist, broken down by source.
+Check ALL JSONL files in the gist for duplicate records (by URL).
+
+Usage:
+    python check-duplicates.py          # Check all files in gist
+    python check-duplicates.py FILE     # Check a local file
 """
 
 import json
@@ -10,18 +13,32 @@ import subprocess
 import sys
 from collections import Counter, defaultdict
 
+import requests
+
 GIST_ID = "16c75a94d276d2800a44e3c2437f40e4"
 
 
-def download_from_gist(filename):
-    """Download a file from gist using gh CLI."""
-    result = subprocess.run(
-        ["gh", "gist", "view", GIST_ID, "-f", filename],
-        capture_output=True, text=True, timeout=60,
-    )
-    if result.returncode == 0:
-        return result.stdout
-    return None
+def get_gist_files():
+    """Fetch all JSONL files from the gist. Returns {filename: content}."""
+    token = os.getenv("GITHUB_TOKEN") or os.getenv("GIST_PAT")
+    headers = {"Authorization": f"token {token}"} if token else {}
+
+    url = f"https://api.github.com/gists/{GIST_ID}"
+    resp = requests.get(url, headers=headers)
+    if resp.status_code != 200:
+        print(f"❌ Failed to fetch gist: {resp.status_code}")
+        return {}
+
+    files = {}
+    for filename, info in resp.json().get("files", {}).items():
+        if not filename.endswith(".jsonl"):
+            continue
+        if info.get("truncated"):
+            raw = requests.get(info["raw_url"], headers=headers)
+            files[filename] = raw.text if raw.status_code == 200 else ""
+        else:
+            files[filename] = info.get("content", "")
+    return files
 
 
 def parse_jsonl(content):
@@ -40,79 +57,78 @@ def parse_jsonl(content):
     return records
 
 
-def main():
-    print("=" * 70)
-    print("DUPLICATE CHECK: raw.jsonl")
-    print("=" * 70)
-    print()
+def check_file(filename, records):
+    """Check one file for duplicates and print results."""
+    if not records:
+        print(f"  (empty)\n")
+        return
 
-    # Download or use local file
-    if len(sys.argv) > 1:
-        filepath = sys.argv[1]
-        print(f"Reading local file: {filepath}")
-        with open(filepath, 'r') as f:
-            content = f.read()
-    else:
-        print("Downloading raw.jsonl from gist...")
-        content = download_from_gist("raw.jsonl")
-        if not content:
-            print("❌ Failed to download raw.jsonl")
-            return
-
-    records = parse_jsonl(content)
-    print(f"Total records: {len(records):,}")
-    print()
-
-    # Count by URL
     url_counts = Counter(r.get("url") for r in records)
-    unique_urls = len(url_counts)
-    duplicated_urls = {url: cnt for url, cnt in url_counts.items() if cnt > 1}
+    unique = len(url_counts)
+    dupes = len(records) - unique
 
-    print("=" * 70)
-    print("SUMMARY")
-    print("=" * 70)
-    print(f"  Total records:     {len(records):,}")
-    print(f"  Unique URLs:       {unique_urls:,}")
-    print(f"  Duplicate records: {len(records) - unique_urls:,}")
-    print(f"  Bloat factor:      {len(records) / unique_urls:.1f}x")
-    print()
+    status = "✓ clean" if dupes == 0 else f"⚠ {dupes:,} duplicates ({len(records)/unique:.1f}x bloat)"
+    print(f"  Records: {len(records):,}  |  Unique URLs: {unique:,}  |  {status}")
 
-    # Breakdown by collected_with
-    source_total = Counter()
+    # Source breakdown
+    source_counts = defaultdict(int)
     source_unique = defaultdict(set)
     for r in records:
-        source = r.get("collected_with") or "null"
-        source_total[source] += 1
-        source_unique[source].add(r.get("url"))
+        src = r.get("collected_with") or "–"
+        source_counts[src] += 1
+        source_unique[src].add(r.get("url"))
 
-    print("BY SOURCE:")
-    print(f"  {'Source':<15} {'Total':>8} {'Unique':>8} {'Dupes':>8} {'Bloat':>8}")
-    print(f"  {'-'*15} {'-'*8} {'-'*8} {'-'*8} {'-'*8}")
-    for source in sorted(source_total.keys()):
-        total = source_total[source]
-        uniq = len(source_unique[source])
-        dupes = total - uniq
-        bloat = f"{total / uniq:.1f}x" if uniq > 0 else "N/A"
-        print(f"  {source:<15} {total:>8,} {uniq:>8,} {dupes:>8,} {bloat:>8}")
+    parts = []
+    for src in sorted(source_counts.keys()):
+        total = source_counts[src]
+        uniq = len(source_unique[src])
+        if total == uniq:
+            parts.append(f"{src}: {uniq:,}")
+        else:
+            parts.append(f"{src}: {uniq:,} unique / {total:,} total")
+    print(f"  Sources: {', '.join(parts)}")
+
+    if dupes > 0:
+        worst = [(url, cnt) for url, cnt in url_counts.most_common(5) if cnt > 1]
+        if worst:
+            print(f"  Worst offenders:")
+            for url, cnt in worst:
+                print(f"    {cnt:>4}x  {url[:75]}")
     print()
 
-    # Show worst offenders
-    if duplicated_urls:
-        worst = sorted(duplicated_urls.items(), key=lambda x: -x[1])[:10]
-        print("MOST DUPLICATED URLs:")
-        for url, cnt in worst:
-            print(f"  {cnt:>4}x  {url[:80]}")
-        print()
 
-    # Distribution of duplication counts
-    dup_dist = Counter(url_counts.values())
-    print("DUPLICATION DISTRIBUTION:")
-    for copies in sorted(dup_dist.keys()):
-        count = dup_dist[copies]
-        label = "unique" if copies == 1 else f"{copies} copies"
-        print(f"  {label:>12}: {count:>6,} URLs")
+def main():
+    # Local file mode
+    if len(sys.argv) > 1:
+        filepath = sys.argv[1]
+        print(f"Checking local file: {filepath}\n")
+        with open(filepath, 'r') as f:
+            records = parse_jsonl(f.read())
+        check_file(filepath, records)
+        return
 
+    # Gist mode: check all files
+    print("=" * 70)
+    print("DUPLICATE CHECK: ALL GIST FILES")
+    print(f"Gist: {GIST_ID}")
+    print("=" * 70)
     print()
+
+    print("Downloading all JSONL files from gist...")
+    files = get_gist_files()
+
+    if not files:
+        print("No JSONL files found.")
+        return
+
+    print(f"Found {len(files)} files\n")
+
+    for filename in sorted(files.keys()):
+        print(f"📄 {filename}")
+        records = parse_jsonl(files[filename])
+        check_file(filename, records)
+
+    print("=" * 70)
 
 
 if __name__ == "__main__":
