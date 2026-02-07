@@ -43,6 +43,26 @@ def generate_id(url: str) -> str:
     return hashlib.sha256(url.encode()).hexdigest()
 
 
+def normalize_url(url: str) -> str:
+    """Normalize URL for deduplication: strip trailing slash, query params, fragments."""
+    if not url:
+        return url
+    from urllib.parse import urlparse, urlunparse
+    parsed = urlparse(url)
+    # Keep scheme, netloc, path; drop query params and fragments
+    normalized = urlunparse((parsed.scheme, parsed.netloc, parsed.path.rstrip('/'), '', '', ''))
+    return normalized
+
+
+def domain_from_url(url: str) -> str:
+    """Extract actual domain from URL (e.g. pagesix.com from pagesix.com/...)."""
+    if not url:
+        return ""
+    from urllib.parse import urlparse
+    netloc = urlparse(url).netloc
+    return netloc.replace('www.', '') if netloc else ""
+
+
 def matches_keywords(story: dict, keywords: list[str]) -> bool:
     """Check if story title or summary contains any keyword (loose match)."""
     title = (story.get("title") or "").lower()
@@ -131,13 +151,15 @@ def passes_global_filters(story: dict) -> tuple[bool, str]:
 def format_story_for_raw(story: dict) -> dict:
     """Convert RSS story to raw.jsonl schema."""
     url = story.get("url", "")
+    # Use actual domain from URL (catches e.g. pagesix.com from nypost feed)
+    actual_domain = domain_from_url(url) or story.get("domain", "")
 
     return {
         "id": generate_id(url),
         "indexed_date": None,
         "language": "en",
-        "media_name": story.get("domain", ""),
-        "media_url": story.get("domain", ""),
+        "media_name": actual_domain,
+        "media_url": actual_domain,
         "publish_date": story.get("publish_date"),
         "title": story.get("title", ""),
         "url": url,
@@ -302,9 +324,9 @@ def main() -> int:
                 if "collected_with" not in record:
                     record["collected_with"] = "mediacloud"
             
-            # Only add MC records not already in raw.jsonl (by URL)
-            existing_urls = {r.get("url") for r in existing_raw}
-            new_mc = [r for r in mediacloud_records if r.get("url") not in existing_urls]
+            # Only add MC records not already in raw.jsonl (by normalized URL)
+            existing_urls = {normalize_url(r.get("url", "")) for r in existing_raw}
+            new_mc = [r for r in mediacloud_records if normalize_url(r.get("url", "")) not in existing_urls]
             existing_raw.extend(new_mc)
             print(f"  New MediaCloud records merged: {len(new_mc)}")
             print(f"  Skipped (already in raw): {len(mediacloud_records) - len(new_mc)}")
@@ -316,9 +338,9 @@ def main() -> int:
         if existing_raw:
             print(f"Existing local records: {len(existing_raw)}")
 
-    # Merge and dedupe by URL
-    existing_urls = {r.get("url") for r in existing_raw}
-    new_records = [r for r in formatted if r.get("url") not in existing_urls]
+    # Merge and dedupe by normalized URL
+    existing_urls = {normalize_url(r.get("url", "")) for r in existing_raw}
+    new_records = [r for r in formatted if normalize_url(r.get("url", "")) not in existing_urls]
     
     print(f"\n=== NEW DATA SUMMARY ===")
     print(f"New records (after dedupe): {len(new_records)}")
