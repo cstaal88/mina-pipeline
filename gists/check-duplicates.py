@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
-Check ALL JSONL files in the gist for duplicate records (by URL).
+Check ALL JSONL files in the gist for duplicate records.
 
 Usage:
-    python check-duplicates.py          # Check all files in gist
-    python check-duplicates.py FILE     # Check a local file
+    python check-duplicates.py              # Check by URL (default)
+    python check-duplicates.py --content    # Check by title+description (content dupes)
+    python check-duplicates.py FILE         # Check a local file
+    python check-duplicates.py FILE --content
 """
 
 import json
 import os
-import subprocess
 import sys
 from collections import Counter, defaultdict
 
@@ -26,7 +27,7 @@ def get_gist_files():
     url = f"https://api.github.com/gists/{GIST_ID}"
     resp = requests.get(url, headers=headers)
     if resp.status_code != 200:
-        print(f"❌ Failed to fetch gist: {resp.status_code}")
+        print(f"Failed to fetch gist: {resp.status_code}")
         return {}
 
     files = {}
@@ -57,8 +58,15 @@ def parse_jsonl(content):
     return records
 
 
-def check_file(filename, records):
-    """Check one file for duplicates and print results."""
+def content_key(record):
+    """Generate a key from title + description for content-based dedup."""
+    title = (record.get("title") or "").strip().lower()
+    desc = (record.get("description") or "").strip().lower()
+    return (title, desc)
+
+
+def check_file_url(filename, records):
+    """Check one file for URL duplicates."""
     if not records:
         print(f"  (empty)\n")
         return
@@ -67,14 +75,14 @@ def check_file(filename, records):
     unique = len(url_counts)
     dupes = len(records) - unique
 
-    status = "✓ clean" if dupes == 0 else f"⚠ {dupes:,} duplicates ({len(records)/unique:.1f}x bloat)"
+    status = "clean" if dupes == 0 else f"{dupes:,} duplicates ({len(records)/unique:.1f}x bloat)"
     print(f"  Records: {len(records):,}  |  Unique URLs: {unique:,}  |  {status}")
 
     # Source breakdown
     source_counts = defaultdict(int)
     source_unique = defaultdict(set)
     for r in records:
-        src = r.get("collected_with") or "–"
+        src = r.get("collected_with") or "-"
         source_counts[src] += 1
         source_unique[src].add(r.get("url"))
 
@@ -97,19 +105,74 @@ def check_file(filename, records):
     print()
 
 
+def check_file_content(filename, records):
+    """Check one file for content duplicates (same title + description, different URLs)."""
+    if not records:
+        print(f"  (empty)\n")
+        return
+
+    # Group by content key
+    by_content = defaultdict(list)
+    for r in records:
+        key = content_key(r)
+        if key[0]:  # skip records with no title
+            by_content[key].append(r)
+
+    # Find groups with multiple URLs
+    content_dupes = []
+    for key, group in by_content.items():
+        urls = set(r.get("url", "") for r in group)
+        if len(urls) > 1:
+            content_dupes.append((key, group))
+
+    # Also count exact content dupes (same title+desc, same URL — true dupes)
+    exact_dupes = sum(len(group) - 1 for group in by_content.values() if len(group) > 1)
+
+    unique_content = len(by_content)
+    print(f"  Records: {len(records):,}  |  Unique title+desc: {unique_content:,}")
+    print(f"  Exact content dupes (same title+desc+url): {exact_dupes}")
+    print(f"  Syndication dupes (same title+desc, different URLs): {len(content_dupes)}")
+
+    if content_dupes:
+        # Sort by group size descending
+        content_dupes.sort(key=lambda x: -len(x[1]))
+        show = content_dupes[:10]
+        print(f"\n  Top syndication dupes:")
+        for (title, _desc), group in show:
+            urls = set(r.get("url", "") for r in group)
+            outlets = set(r.get("media_url", "") or r.get("media_name", "") for r in group)
+            print(f"    [{len(urls)} URLs] {title[:80]}")
+            print(f"      Outlets: {', '.join(sorted(outlets))}")
+            for u in sorted(urls):
+                print(f"        {u[:90]}")
+            print()
+    else:
+        print(f"  No syndication dupes found.\n")
+
+
 def main():
+    args = [a for a in sys.argv[1:] if not a.startswith("-")]
+    flags = [a for a in sys.argv[1:] if a.startswith("-")]
+    content_mode = "--content" in flags
+
+    mode_label = "CONTENT (title+description)" if content_mode else "URL"
+
     # Local file mode
-    if len(sys.argv) > 1:
-        filepath = sys.argv[1]
-        print(f"Checking local file: {filepath}\n")
+    if args:
+        filepath = args[0]
+        print(f"Checking local file: {filepath}")
+        print(f"Mode: {mode_label}\n")
         with open(filepath, 'r') as f:
             records = parse_jsonl(f.read())
-        check_file(filepath, records)
+        if content_mode:
+            check_file_content(filepath, records)
+        else:
+            check_file_url(filepath, records)
         return
 
     # Gist mode: check all files
     print("=" * 70)
-    print("DUPLICATE CHECK: ALL GIST FILES")
+    print(f"DUPLICATE CHECK: ALL GIST FILES ({mode_label})")
     print(f"Gist: {GIST_ID}")
     print("=" * 70)
     print()
@@ -124,9 +187,12 @@ def main():
     print(f"Found {len(files)} files\n")
 
     for filename in sorted(files.keys()):
-        print(f"📄 {filename}")
+        print(f"  {filename}")
         records = parse_jsonl(files[filename])
-        check_file(filename, records)
+        if content_mode:
+            check_file_content(filename, records)
+        else:
+            check_file_url(filename, records)
 
     print("=" * 70)
 

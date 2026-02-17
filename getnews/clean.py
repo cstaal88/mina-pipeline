@@ -386,6 +386,20 @@ def main() -> int:
             and not has_excluded_terms(r, exclude_terms)
         ]
 
+        # Content-based dedup: remove stories with identical title+description
+        # (catches syndication dupes and URL normalization gaps)
+        before_dedup = len(topic_clean)
+        seen_content = set()
+        deduped = []
+        for r in topic_clean:
+            key = ((r.get("title") or "").strip().lower(),
+                   (r.get("description") or "").strip().lower())
+            if key not in seen_content:
+                seen_content.add(key)
+                deduped.append(r)
+        topic_clean = deduped
+        content_dupes = before_dedup - len(topic_clean)
+
         clean_filename = f"clean-{topic_name}.jsonl"
         local_clean = local_dir / clean_filename
 
@@ -401,6 +415,8 @@ def main() -> int:
 
         filtered_out = len(topic_raw) - len(topic_clean)
         print(f"  {topic_name}: {len(topic_raw)} raw → {len(topic_clean)} clean")
+        if content_dupes > 0:
+            print(f"    └─ {content_dupes} content duplicates removed (syndication/URL variants)")
         if filtered_out > 0:
             print(f"    └─ {filtered_out} filtered out (non-English, excluded domains, or strict keyword mismatch)")
 
