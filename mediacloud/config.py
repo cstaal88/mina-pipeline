@@ -55,6 +55,7 @@ DEFAULT_TOPIC = "minneapolis-ice"
 
 # Common outlets used across topics
 ALL_OUTLETS = {
+    "breitbart.com": 19334,
     "foxnews.com": 1092,
     "abcnews.go.com": 19260,
     "apnews.com": 106145,

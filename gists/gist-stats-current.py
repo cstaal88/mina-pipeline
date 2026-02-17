@@ -9,14 +9,19 @@ Fetches and analyzes the raw.jsonl and clean-*.jsonl files from the unified gist
 providing stats, samples, and evaluation of cleaning procedures.
 
 Can also analyze local files when passed as arguments.
+
+Options:
+    --rolling / -r    Show 7-day rolling averages instead of per-date counts
+    --save / -s FILE  Save output to a file (in addition to printing)
 """
 
+import argparse
 import json
 import os
 import sys
 from collections import Counter
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import requests
@@ -90,6 +95,38 @@ def extract_domain(url: str) -> str:
         return 'unknown'
 
 
+def rolling_average(date_counts: dict, window: int = 7) -> dict[str, float]:
+    """Compute rolling average over a window of days.
+
+    Fills in missing dates in the range so the average is correct.
+    Returns {date_str: rolling_avg}.
+    """
+    valid_dates = sorted([d for d in date_counts if d and d != 'unknown'])
+    if not valid_dates:
+        return {}
+
+    start = datetime.strptime(valid_dates[0], "%Y-%m-%d").date()
+    end = datetime.strptime(valid_dates[-1], "%Y-%m-%d").date()
+
+    # Build full date series
+    all_dates = []
+    d = start
+    while d <= end:
+        all_dates.append(d)
+        d += timedelta(days=1)
+
+    counts_by_date = {d: date_counts.get(d.strftime("%Y-%m-%d"), 0) for d in all_dates}
+
+    result = {}
+    for i, d in enumerate(all_dates):
+        window_start = max(0, i - window + 1)
+        window_dates = all_dates[window_start:i + 1]
+        avg = sum(counts_by_date[wd] for wd in window_dates) / len(window_dates)
+        result[d.strftime("%Y-%m-%d")] = round(avg, 1)
+
+    return result
+
+
 def analyze_entries(entries: list[dict], is_raw: bool = False) -> dict:
     """Analyze a list of entries and return stats."""
     if not entries:
@@ -130,19 +167,27 @@ def analyze_entries(entries: list[dict], is_raw: bool = False) -> dict:
     }
 
 
-def print_histogram(title: str, counts: dict, bar_width: int = 40):
-    """Print ASCII histogram."""
-    sorted_keys = sorted([k for k in counts.keys() if k and k != 'unknown'])
+def print_histogram(title: str, counts: dict, bar_width: int = 40, use_rolling: bool = False):
+    """Print ASCII histogram. Optionally use 7-day rolling average."""
+    if use_rolling:
+        display_counts = rolling_average(counts)
+        title = f"{title} (7-day rolling avg)"
+    else:
+        display_counts = counts
+
+    sorted_keys = sorted([k for k in display_counts.keys() if k and k != 'unknown'])
     if not sorted_keys:
         return
 
-    max_count = max(counts[k] for k in sorted_keys)
+    max_count = max(display_counts[k] for k in sorted_keys)
     print(f"\n  {title}:")
     for k in sorted_keys:
-        c = counts[k]
+        c = display_counts[k]
         length = int((c / max_count) * bar_width) if max_count > 0 else 0
         bar = '█' * max(1, length)
-        print(f"    {k} | {bar:<{bar_width}} {c}")
+        # Show integer for whole numbers, one decimal for rolling avg
+        label = f"{c:.1f}" if use_rolling else str(c)
+        print(f"    {k} | {bar:<{bar_width}} {label}")
 
 
 def print_media_stats(media_stats: list, bar_width: int = 30):
@@ -160,43 +205,86 @@ def print_media_stats(media_stats: list, bar_width: int = 30):
 
 def main():
     """Main function."""
+    parser = argparse.ArgumentParser(description="MINA News Data Pipeline - Gist Stats")
+    parser.add_argument("file", nargs="?", help="Local JSONL file to analyze (optional)")
+    parser.add_argument("-r", "--rolling", action="store_true",
+                        help="Show 7-day rolling averages instead of per-date counts")
+    parser.add_argument("-s", "--save", metavar="FILE",
+                        help="Save output to file (in addition to printing)")
+    args = parser.parse_args()
+
+    # Set up output capture if --save
+    original_print = __builtins__["print"] if isinstance(__builtins__, dict) else __builtins__.print
+    save_lines = []
+
+    if args.save:
+        def capturing_print(*pargs, **kwargs):
+            import io
+            buf = io.StringIO()
+            original_print(*pargs, file=buf, **kwargs)
+            text = buf.getvalue()
+            save_lines.append(text)
+            original_print(*pargs, **kwargs)
+
+        import builtins
+        builtins.print = capturing_print
+
+    try:
+        _run(args)
+    finally:
+        if args.save:
+            import builtins
+            builtins.print = original_print
+            save_path = Path(args.save)
+            save_path.write_text("".join(save_lines), encoding="utf-8")
+            original_print(f"\nOutput saved to {save_path}")
+
+
+def _run(args):
+    """Run the analysis."""
+    use_rolling = args.rolling
+
     # Check if local file provided
-    if len(sys.argv) > 1:
-        local_file = Path(sys.argv[1])
+    if args.file:
+        local_file = Path(args.file)
         if not local_file.exists():
             print(f"Error: File {local_file} not found")
             return
-            
+
         print("=" * 80)
         print(f"MINA News Data Pipeline - Local File Analysis")
         print(f"Generated: {datetime.now().isoformat()}")
         print(f"File: {local_file}")
+        if use_rolling:
+            print("Mode: 7-day rolling average")
         print("=" * 80)
-        
+
         with open(local_file, 'r') as f:
             content = f.read()
-        
+
         # Analyze the local file as raw data
         print(f"\n{'='*60}")
         print("LOCAL FILE ANALYSIS")
         print("=" * 60)
-        
+
         entries = parse_jsonl(content)
         stats = analyze_entries(entries, is_raw=True)
-        
+
         print(f"\n  Total entries: {stats['count']}")
         if stats['date_range'].get('earliest'):
             print(f"  Date range: {stats['date_range']['earliest']} to {stats['date_range']['latest']}")
 
-        print_histogram("Stories per date", stats['date_counts'])
+        print_histogram("Stories per date", stats['date_counts'], use_rolling=use_rolling)
         print_media_stats(stats['media_stats'])
         return
-    
+
     # Original gist analysis
     print("=" * 80)
     print("MINA News Data Pipeline - Unified Gist Overview")
     print(f"Generated: {datetime.now().isoformat()}")
     print(f"Gist ID: {UNIFIED_GIST_ID}")
+    if use_rolling:
+        print("Mode: 7-day rolling average")
     print("=" * 80)
 
     files = get_gist_files(UNIFIED_GIST_ID)
@@ -219,7 +307,7 @@ def main():
         if stats['date_range'].get('earliest'):
             print(f"  Date range: {stats['date_range']['earliest']} to {stats['date_range']['latest']}")
 
-        print_histogram("Stories per date", stats['date_counts'])
+        print_histogram("Stories per date", stats['date_counts'], use_rolling=use_rolling)
         print_media_stats(stats['media_stats'])
 
     # Analyze mediacloud_raw_{topic}.jsonl files (per-topic raw archives)
@@ -237,7 +325,7 @@ def main():
             if mc_stats['date_range'].get('earliest'):
                 print(f"  Date range: {mc_stats['date_range']['earliest']} to {mc_stats['date_range']['latest']}")
 
-            print_histogram("Stories per date", mc_stats['date_counts'])
+            print_histogram("Stories per date", mc_stats['date_counts'], use_rolling=use_rolling)
             print_media_stats(mc_stats['media_stats'])
 
             # Sample
@@ -249,7 +337,7 @@ def main():
                 print(f"    URL: {s.get('url', 'N/A')[:60]}...")
             elif mc_stats['count'] == 0:
                 print(f"\n  No MediaCloud records yet for {topic}")
-    
+
     # Also check for legacy single mediacloud_raw.jsonl (backwards compat)
     if 'mediacloud_raw.jsonl' in files:
         print(f"\n{'='*60}")
@@ -263,7 +351,7 @@ def main():
         if mc_stats['date_range'].get('earliest'):
             print(f"  Date range: {mc_stats['date_range']['earliest']} to {mc_stats['date_range']['latest']}")
 
-        print_histogram("Stories per date", mc_stats['date_counts'])
+        print_histogram("Stories per date", mc_stats['date_counts'], use_rolling=use_rolling)
         print_media_stats(mc_stats['media_stats'])
 
         # Compare RSS vs MediaCloud coverage
@@ -300,7 +388,7 @@ def main():
             if stats['date_range'].get('earliest'):
                 print(f"  Date range: {stats['date_range']['earliest']} to {stats['date_range']['latest']}")
 
-            print_histogram("Stories per date", stats['date_counts'])
+            print_histogram("Stories per date", stats['date_counts'], use_rolling=use_rolling)
             print_media_stats(stats['media_stats'])
 
             # Sample
