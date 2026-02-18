@@ -58,6 +58,7 @@ TOPICS = {
         ],
         "exclude_terms": [
             "hockey", "nhl", "wild", "puck", "rink", "skate",
+            "gophers", "matchup", "big ten", "iihf",
         ],
     },
     "greenland-trump": {

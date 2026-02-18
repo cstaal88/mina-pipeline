@@ -24,5 +24,8 @@ mediacloud/collect/.fetch-checkpoint*.json
 .vscode/
 .idea/
 
+# Claude Code
+.claude/
+
 # Local notes
 notes/
