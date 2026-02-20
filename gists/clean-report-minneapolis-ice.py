@@ -128,7 +128,7 @@ def save_outlet_chart(labels: list, values: list, output_path: Path):
     fig, ax = plt.subplots(figsize=(16, fig_h))
 
     y_pos = range(n)
-    bars = ax.barh(list(y_pos), values, color="#4C72B0", height=0.6)
+    bars = ax.barh(list(y_pos), values, color="#BF5700", height=0.6)
     ax.set_yticks(list(y_pos))
     ax.set_yticklabels(labels, fontsize=25)
     ax.invert_yaxis()
@@ -151,7 +151,7 @@ def save_outlet_chart(labels: list, values: list, output_path: Path):
 
 
 def save_date_chart(dates: list, values: list, title: str,
-                    output_path: Path, color: str = "#2196F3", is_float: bool = False):
+                    output_path: Path, color: str = "#BF5700", is_float: bool = False):
     """Vertical bar chart with a count label on every bar."""
     n = len(dates)
     fig_w = max(24, n * 0.6)
@@ -308,7 +308,7 @@ def main():
         d_labels, d_vals,
         title="Minneapolis ICE Clean — Stories per Day",
         output_path=img("by-date"),
-        color="#2196F3",
+        color="#BF5700",
     )
 
     r_labels = [d for d, _ in rolling_sorted]
@@ -317,7 +317,7 @@ def main():
         r_labels, r_vals,
         title="Minneapolis ICE Clean — Stories per Day (7-Day Rolling Avg)",
         output_path=img("by-date-7d-rolling"),
-        color="#4CAF50",
+        color="#BF5700",
         is_float=True,
     )
 
