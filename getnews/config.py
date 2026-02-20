@@ -203,6 +203,9 @@ GLOBAL_FILTERS = {
         "sponsored content", "paid content", "advertisement",
         "listen to the podcast", "new episode",
         "newsletter", "breaking news alert",
+        # Daily news digest / quiz formats (not standalone stories about the topic)
+        "5 things to know",
+        "weekly student news quiz",
     ],
 }
 

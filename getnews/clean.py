@@ -386,17 +386,26 @@ def main() -> int:
             and not has_excluded_terms(r, exclude_terms)
         ]
 
-        # Content-based dedup: remove stories with identical title+description
-        # (catches syndication dupes and URL normalization gaps)
+        # Content-based dedup: remove stories with identical title+description pair,
+        # OR identical title alone (catches AP wire syndication across outlets where
+        # the same story gets slightly different descriptions on apnews.com vs
+        # abcnews.go.com etc.). Minimum title length avoids false positives on
+        # short/generic headlines.
         before_dedup = len(topic_clean)
-        seen_content = set()
+        seen_content = set()  # (title, desc) pairs
+        seen_titles = set()   # titles alone
         deduped = []
         for r in topic_clean:
-            key = ((r.get("title") or "").strip().lower(),
-                   (r.get("description") or "").strip().lower())
-            if key not in seen_content:
-                seen_content.add(key)
-                deduped.append(r)
+            title = (r.get("title") or "").strip().lower()
+            desc = (r.get("description") or "").strip().lower()
+            if (title, desc) in seen_content:
+                continue
+            if title and len(title) > 40 and title in seen_titles:
+                continue
+            seen_content.add((title, desc))
+            if title and len(title) > 40:
+                seen_titles.add(title)
+            deduped.append(r)
         topic_clean = deduped
         content_dupes = before_dedup - len(topic_clean)
 
