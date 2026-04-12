@@ -30,7 +30,6 @@ jobs:
     env:
       MEDIACLOUD_API_KEY: ${{ secrets.MEDIACLOUD_API_KEY }}
       GH_TOKEN: ${{ secrets.GIST_PAT }}
-      GIST_ID: "16c75a94d276d2800a44e3c2437f40e4"
 
     steps:
       - name: Checkout repo
@@ -42,6 +41,8 @@ jobs:
           python-version: '3.12'
 
       - name: Validate gist authentication
+        env:
+          GH_TOKEN: ${{ secrets.GIST_PAT }}
         run: |
           if [ -z "$GH_TOKEN" ]; then
             echo "ERROR: secrets.GIST_PAT is not set."
@@ -51,8 +52,8 @@ jobs:
             echo "ERROR: GH_TOKEN is invalid or expired. Rotate secrets.GIST_PAT."
             exit 1
           fi
-          if ! gh gist view "$GIST_ID" --files >/dev/null 2>&1; then
-            echo "ERROR: GH_TOKEN cannot access gist $GIST_ID (missing gist scope or expired token)."
+          if ! gh gist list --limit 1 >/dev/null 2>&1; then
+            echo "ERROR: GH_TOKEN cannot access gists (missing gist scope or expired token)."
             exit 1
           fi
 
