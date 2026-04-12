@@ -30,6 +30,7 @@ jobs:
     env:
       MEDIACLOUD_API_KEY: ${{ secrets.MEDIACLOUD_API_KEY }}
       GH_TOKEN: ${{ secrets.GIST_PAT }}
+      GIST_ID: "16c75a94d276d2800a44e3c2437f40e4"
 
     steps:
       - name: Checkout repo
@@ -39,6 +40,21 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
+      - name: Validate gist authentication
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "ERROR: secrets.GIST_PAT is not set."
+            exit 1
+          fi
+          if ! gh auth status >/dev/null 2>&1; then
+            echo "ERROR: GH_TOKEN is invalid or expired. Rotate secrets.GIST_PAT."
+            exit 1
+          fi
+          if ! gh gist view "$GIST_ID" --files >/dev/null 2>&1; then
+            echo "ERROR: GH_TOKEN cannot access gist $GIST_ID (missing gist scope or expired token)."
+            exit 1
+          fi
 
       - name: Install dependencies
         run: |
@@ -60,9 +76,6 @@ jobs:
           fi
           
           echo "=== Running pipeline for topics: $TOPICS ==="
-          
-          # Use unified gist for all MediaCloud data
-          GIST_ID="16c75a94d276d2800a44e3c2437f40e4"
           
           # Download shared mediacloud_raw.jsonl ONCE before processing any topics
           # All topics append to this single file

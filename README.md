@@ -134,6 +134,8 @@ Required:
 
 For GitHub Actions:
 - `GIST_PAT`: GitHub token with gist write permissions
+  - If this token expires, both workflows fail at the "Validate gist authentication" step.
+  - Rotate by regenerating/replacing the token, then update the repository secret `GIST_PAT`.
 
 ## Ad-hoc vs Automated Runs
 
