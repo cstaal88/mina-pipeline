@@ -1,0 +1,32 @@
+name: "RSS Pipeline v2"
+
+on:
+  workflow_dispatch:
+  # Uncomment to run on a schedule:
+  # schedule:
+  #   - cron: "0 */6 * * *"  # every 6 hours
+
+concurrency:
+  group: rss-pipeline
+  cancel-in-progress: true
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install xmltodict langdetect psycopg2-binary
+
+      - name: Run pipeline
+        run: cd v2draft && python pipeline.py
