@@ -20,8 +20,10 @@ Data Sources:
 
 import hashlib
 import json
+import shutil
 import subprocess
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -36,6 +38,12 @@ from config import (
     EXCLUDED_FROM_CLEAN,
     GLOBAL_FILTERS,
 )
+
+# raw.jsonl passed 17 MB in mid-2026 and grows daily. The old 30s read timeout
+# was half the write budget for the same bytes, and a timeout here used to be
+# indistinguishable from "file not found" -- see GistError.
+GIST_TIMEOUT = 120
+GIST_UPLOAD_TIMEOUT = 120
 
 
 def generate_id(url: str) -> str:
@@ -224,33 +232,103 @@ def save_jsonl(path: Path, records: list[dict], meta: dict | None = None) -> Non
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+class GistError(RuntimeError):
+    """
+    A gist operation failed for a reason other than the file being absent.
+    """
+
+
+def gist_list_files() -> set[str]:
+    """Filenames currently in the unified gist. Raises GistError if unknowable."""
+    try:
+        result = subprocess.run(
+            ["gh", "gist", "view", GIST_ID, "--files"],
+            capture_output=True,
+            text=True,
+            timeout=GIST_TIMEOUT,
+        )
+    except Exception as e:
+        raise GistError(f"could not list gist files: {e}") from e
+
+    if result.returncode != 0:
+        raise GistError(f"could not list gist files: {result.stderr.strip()}")
+
+    return {line.strip() for line in result.stdout.splitlines() if line.strip()}
+
+
 def gist_download(filename: str) -> str | None:
-    """Download a file from the unified gist. Returns content or None."""
+    """
+    Download a file from the unified gist.
+
+    Returns the file's content, or None ONLY if the gist genuinely has no such
+    file. Raises GistError on any other failure (timeout, rate limit, auth),
+    because callers use None to mean "start fresh" -- see GistError.
+    """
     try:
         result = subprocess.run(
             ["gh", "gist", "view", GIST_ID, "-f", filename],
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=GIST_TIMEOUT,
         )
-        if result.returncode == 0:
-            return result.stdout
-        return None
+    except subprocess.TimeoutExpired as e:
+        raise GistError(
+            f"timed out after {GIST_TIMEOUT}s downloading {filename}"
+        ) from e
     except Exception as e:
-        print(f"  Warning: Could not download gist: {e}")
-        return None
+        raise GistError(f"error downloading {filename}: {e}") from e
+
+    if result.returncode == 0:
+        return result.stdout
+
+    # Non-zero: distinguish "no such file" from a broken call by asking the gist
+    # what it holds. Don't sniff stderr text -- gh's wording is not a contract.
+    if filename in gist_list_files():
+        raise GistError(
+            f"{filename} exists in the gist but could not be downloaded: "
+            f"{result.stderr.strip()}"
+        )
+    return None
 
 
 def gist_upload(filename: str, filepath: Path) -> bool:
-    """Upload a file to the unified gist. Returns success."""
+    """
+    Upload a file to the unified gist. Returns success.
+
+    `gh gist edit -f` only SELECTS an existing gist file, so the first upload of
+    a new topic's clean file fails. Fall back to --add, which creates it. --add
+    takes the gist filename from the local file's basename, so stage a copy
+    under the right name when they differ.
+    """
     try:
         result = subprocess.run(
             ["gh", "gist", "edit", GIST_ID, "-f", filename, str(filepath)],
             capture_output=True,
             text=True,
-            timeout=60,
+            timeout=GIST_UPLOAD_TIMEOUT,
         )
-        return result.returncode == 0
+        if result.returncode == 0:
+            return True
+
+        if filename in gist_list_files():
+            print(f"  Warning: gist edit failed: {result.stderr.strip()}")
+            return False
+
+        print(f"  {filename} not in gist yet - adding it")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            staged = Path(tmpdir) / filename
+            shutil.copyfile(filepath, staged)
+            add_result = subprocess.run(
+                ["gh", "gist", "edit", GIST_ID, "--add", str(staged)],
+                capture_output=True,
+                text=True,
+                timeout=GIST_UPLOAD_TIMEOUT,
+            )
+        if add_result.returncode != 0:
+            print(f"  Warning: gist add failed: {add_result.stderr.strip()}")
+        return add_result.returncode == 0
+    except GistError:
+        raise
     except Exception as e:
         print(f"  Warning: Could not upload to gist: {e}")
         return False
@@ -294,14 +372,20 @@ def main() -> int:
 
     # Load existing raw data (RSS + MediaCloud unified dataset)
     existing_raw = []
+    # How many records the gist's raw.jsonl held before this run. The upload is
+    # blocked below if we somehow ended up with fewer -- the archive must never
+    # shrink.
+    gist_raw_count = 0
     local_dir = TEST_DIR / "unified"
     local_raw = local_dir / "raw.jsonl"
 
     if push:
         print("\nDownloading existing raw.jsonl from gist...")
+        # Raises GistError if the download fails; only returns None when the
+        # gist truly has no raw.jsonl yet (i.e. a genuinely fresh start).
         content = gist_download("raw.jsonl")
         if content is None:
-            print("  No existing raw.jsonl (or download failed) - starting fresh")
+            print("  Gist has no raw.jsonl yet - starting fresh")
         else:
             # Save backup
             backup_file = local_dir / "raw-backup-before-push.jsonl"
@@ -310,8 +394,9 @@ def main() -> int:
             print(f"  Backup saved: {backup_file}")
 
             existing_raw = parse_jsonl_content(content)
+            gist_raw_count = len(existing_raw)
             print(f"  Existing records: {len(existing_raw)}")
-            
+
         # Also download and merge MediaCloud data (dedupe by URL)
         print("\nDownloading MediaCloud data to merge...")
         mediacloud_content = gist_download("mediacloud_raw.jsonl")
@@ -432,19 +517,32 @@ def main() -> int:
     print(f"\nAll files saved to {local_dir}/")
 
     # Push to gist if requested
+    upload_failed = False
     if push:
+        # Last line of defence: whatever else went wrong, never publish a
+        # raw.jsonl smaller than the one we downloaded.
+        if len(all_raw) < gist_raw_count:
+            print(
+                f"\nABORT: refusing to upload - raw.jsonl would shrink from "
+                f"{gist_raw_count} to {len(all_raw)} records. "
+                f"Nothing was pushed; the gist is untouched."
+            )
+            return 1
+
         print("\nUploading to gist...")
 
         if gist_upload("raw.jsonl", local_raw):
             print("  ✓ raw.jsonl")
         else:
             print("  ✗ raw.jsonl (failed)")
+            upload_failed = True
 
         for filename, filepath in clean_files.items():
             if gist_upload(filename, filepath):
                 print(f"  ✓ {filename}")
             else:
                 print(f"  ✗ {filename} (failed)")
+                upload_failed = True
 
         print(f"\nGist: https://gist.github.com/{GIST_ID}")
 
@@ -464,8 +562,21 @@ def main() -> int:
             topic_clean = [r for r in topic_raw if matches_strict_keywords(r, keywords)]
             print(f"    {topic_name}: {len(topic_clean)} stories (from {len(topic_raw)} raw matches)")
 
+    if upload_failed:
+        print("\nOne or more gist uploads FAILED (see ✗ above).")
+        return 1
+
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except GistError as e:
+        print(f"\nFATAL: {e}", file=sys.stderr)
+        print(
+            "Refusing to continue: raw.jsonl is the only copy of the RSS archive, "
+            "and rebuilding it from scratch would destroy it. Nothing was pushed.",
+            file=sys.stderr,
+        )
+        sys.exit(1)

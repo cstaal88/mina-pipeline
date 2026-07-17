@@ -19,8 +19,8 @@ TEST_DIR = DATA_DIR / "test"
 # GIST STORAGE
 # ─────────────────────────────────────────────────────────────────────────────
 # Single gist with all data:
-#   - raw.jsonl: all stories matching ANY topic's keywords
-#   - clean-{topic}.jsonl: strict filtered per topic
+#   - raw.jsonl: EVERY story fetched, no topic filtering (RSS + MediaCloud merged)
+#   - clean-{topic}.jsonl: strict filtered per topic, regenerated from raw each run
 
 GIST_ID = "16c75a94d276d2800a44e3c2437f40e4"
 
@@ -44,8 +44,9 @@ USER_AGENT = (
 # ─────────────────────────────────────────────────────────────────────────────
 # TOPICS
 # ─────────────────────────────────────────────────────────────────────────────
-# Keywords used for BOTH filters (same keywords, different strictness):
-#   • raw.jsonl: any keyword match anywhere in title/summary
+# Keywords select what lands in clean-{topic}.jsonl only; raw.jsonl is
+# unfiltered. Strictness:
+#   • loose pre-pass: any keyword match anywhere in title/summary
 #   • clean-{topic}.jsonl: keyword in title, OR 2+ times in summary
 
 TOPICS = {
@@ -65,6 +66,30 @@ TOPICS = {
         "keywords": [
             "greenland", "denmark", "danish",
             "nuuk", "arctic",
+        ],
+    },
+    "midterms": {
+        # 2026 US midterm elections. These keywords decide the clean file for
+        # BOTH sources (RSS and MediaCloud), because clean.py merges
+        # mediacloud_raw.jsonl into raw.jsonl before filtering.
+        #
+        # Phrases, not bare nouns. A single keyword hit in a TITLE is enough to
+        # admit a story, so "election" alone would pull in foreign elections and
+        # Hall of Fame votes; "poll" would pull in every opinion survey.
+        "keywords": [
+            "midterm", "midterms", "midterm election", "midterm elections",
+            "senate race", "senate races",
+            "house race", "house races",
+            "congressional race", "congressional races",
+            "gubernatorial", "governor's race",
+            "control of congress", "control of the senate",
+            "control of the house",
+            "2026 election", "2026 elections", "2026 midterms",
+        ],
+        "exclude_terms": [
+            # "election"/"race" collide with sports and non-US politics
+            "hall of fame", "conclave", "papal", "pope",
+            "nascar", "derby", "grand prix", "marathon",
         ],
     },
 }

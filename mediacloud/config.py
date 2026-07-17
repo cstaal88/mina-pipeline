@@ -127,6 +127,49 @@ TOPICS = {
         # Gist contains: raw.jsonl, clean.jsonl
         "gist_id": "a046f4a9233ff2e499dfeb356e081d79",
     },
+    "midterms": {
+        # 2026 US midterm elections (general: 2026-11-03).
+        # Backfill earlier by lowering this, but note every extra day costs
+        # API quota across all 17 outlets -- check mediacloud/quota.py first.
+        "start_date": date(2026, 7, 1),
+        # COLLECTION filter: the only thing limiting what the API returns,
+        # since the workflow runs with --nofilter. Deliberately built from
+        # high-precision phrases rather than bare "election"/"vote"/"poll",
+        # which would match foreign elections, floor votes, and opinion polls.
+        "query": (
+            '('
+            '"midterm election" OR "midterm elections" OR midterms '
+            'OR "Senate race" OR "Senate races" '
+            'OR "House race" OR "House races" '
+            'OR "gubernatorial race" OR "governor\'s race" '
+            'OR "control of Congress" OR "control of the Senate" '
+            'OR "control of the House" '
+            'OR ("2026" AND (election OR elections) '
+            'AND (Senate OR House OR governor OR congressional)) '
+            ')'
+        ),
+        "outlets": ALL_OUTLETS,
+        "filter_keywords": [
+            "midterm", "midterms", "election", "elections",
+            "senate", "house", "congress", "congressional",
+            "governor", "gubernatorial", "campaign", "candidate",
+            "primary", "ballot", "voters", "turnout",
+        ],
+        # Topic keywords for strict relevance filtering
+        # KEEP if: keyword in TITLE, OR keyword appears 2+ times in DESCRIPTION
+        # Phrases only -- a bare "election" in a title admits far too much.
+        "topic_keywords": [
+            "midterm", "midterms", "midterm election",
+            "senate race", "house race", "congressional race",
+            "gubernatorial", "governor's race",
+            "control of congress", "control of the senate",
+            "control of the house",
+            "2026 election", "2026 elections",
+        ],
+        # No gist_id on purpose: the workflow owns gist I/O for this topic and
+        # writes to the unified gist. Setting gist_id here would let a manual
+        # --push-gist run overwrite the unified raw.jsonl with MC-only data.
+    },
 }
 
 

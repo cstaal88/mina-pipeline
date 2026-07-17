@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       topic:
-        description: 'Topic to collect (leave empty for ALL topics)'
+        description: 'Topic to collect (leave empty for default topic)'
         required: false
         default: ''
 
@@ -55,8 +55,8 @@ jobs:
             # Single topic specified
             TOPICS="$INPUT_TOPIC"
           else
-            # Default: only minneapolis-ice (greenland-trump dropped)
-            TOPICS="minneapolis-ice"
+            # Default: only midterms (minneapolis-ice and greenland-trump dropped)
+            TOPICS="midterms"
           fi
           
           echo "=== Running pipeline for topics: $TOPICS ==="
@@ -68,12 +68,24 @@ jobs:
           # All topics append to this single file
           SHARED_RAW="mediacloud/raw/_combined.jsonl"
           mkdir -p "mediacloud/raw"
-          if gh gist view "$GIST_ID" -f "mediacloud_raw.jsonl" > "$SHARED_RAW" 2>/dev/null; then
-            EXISTING_RAW=$(wc -l < "$SHARED_RAW")
-            echo "Downloaded $EXISTING_RAW existing MediaCloud raw records"
+          # A failed download must NOT be treated as "no data yet": that starts
+          # from an empty file and the upload below then wipes the archive.
+          # Only an absent file is a legitimate fresh start.
+          if gh gist view "$GIST_ID" -f "mediacloud_raw.jsonl" > "$SHARED_RAW"; then
+            DOWNLOADED_RAW=$(wc -l < "$SHARED_RAW")
+            echo "Downloaded $DOWNLOADED_RAW existing MediaCloud raw records"
+          elif ! GIST_FILES=$(gh gist view "$GIST_ID" --files 2>&1); then
+            echo "ERROR: could not list gist files: $GIST_FILES"
+            echo "Refusing to continue - cannot tell if the archive exists."
+            exit 1
+          elif echo "$GIST_FILES" | grep -qx "mediacloud_raw.jsonl"; then
+            echo "ERROR: mediacloud_raw.jsonl is in the gist but could not be downloaded."
+            echo "Refusing to continue - uploading now would overwrite the archive."
+            exit 1
           else
-            echo "No existing mediacloud_raw.jsonl in gist (starting fresh)"
-            touch "$SHARED_RAW"
+            echo "No mediacloud_raw.jsonl in gist yet (starting fresh)"
+            : > "$SHARED_RAW"
+            DOWNLOADED_RAW=0
           fi
           
           for TOPIC in $TOPICS; do
@@ -109,8 +121,15 @@ jobs:
           
           # Upload shared mediacloud_raw.jsonl ONCE after all topics
           if [ -f "$SHARED_RAW" ]; then
+            FINAL_RAW=$(wc -l < "$SHARED_RAW")
+            # Last line of defence: the archive must never shrink.
+            if [ "$FINAL_RAW" -lt "$DOWNLOADED_RAW" ]; then
+              echo "ERROR: refusing to upload - mediacloud_raw.jsonl would shrink"
+              echo "from $DOWNLOADED_RAW to $FINAL_RAW records. Gist left untouched."
+              exit 1
+            fi
             echo ""
-            echo "Uploading mediacloud_raw.jsonl to unified gist..."
+            echo "Uploading mediacloud_raw.jsonl to unified gist ($FINAL_RAW records)..."
             gh gist edit "$GIST_ID" -f "mediacloud_raw.jsonl" "$SHARED_RAW"
             echo "✓ Unified gist updated: https://gist.github.com/$GIST_ID"
           fi
