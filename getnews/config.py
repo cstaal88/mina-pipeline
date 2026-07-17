@@ -68,14 +68,19 @@ TOPICS = {
             "nuuk", "arctic",
         ],
     },
-    "midterms": {
-        # 2026 US midterm elections. These keywords decide the clean file for
-        # BOTH sources (RSS and MediaCloud), because clean.py merges
-        # mediacloud_raw.jsonl into raw.jsonl before filtering.
-        #
-        # Phrases, not bare nouns. A single keyword hit in a TITLE is enough to
-        # admit a story, so "election" alone would pull in foreign elections and
-        # Hall of Fame votes; "poll" would pull in every opinion survey.
+    # ── 2026 US midterms: THREE tiers over the same raw archive ──────────────
+    # We don't yet know the right recall/precision threshold for the study's
+    # chatbot, so we build three clean files at different widths and choose
+    # empirically (descriptives + chatbot eval). All three filter the same
+    # raw.jsonl; only the keyword breadth differs. Naming -> clean-{topic}.jsonl.
+    #
+    # Design rule: COLLECT BROAD, FILTER TO TIERS. The MediaCloud query
+    # (mediacloud/config.py) is the broadest of the three so every tier has data
+    # to draw from; you can filter down at clean-time but not filter in what was
+    # never collected.
+
+    # FOCUSED -- horse-race only. High precision; every hit is about a contest.
+    "midterms-focused": {
         "keywords": [
             "midterm", "midterms", "midterm election", "midterm elections",
             "senate race", "senate races",
@@ -87,15 +92,69 @@ TOPICS = {
             "2026 election", "2026 elections", "2026 midterms",
         ],
         "exclude_terms": [
-            # "election"/"race" collide with sports and non-US politics
+            "hall of fame", "conclave", "papal", "pope",
+            "nascar", "derby", "grand prix", "marathon",
+        ],
+    },
+
+    # MEDIUM -- focused PLUS policy issues, but only when they co-occur with an
+    # election-context term (context_issues AND context_terms). Picks up "what
+    # the election is about" without ingesting every immigration story ever.
+    "midterms-medium": {
+        "keywords": [
+            "midterm", "midterms", "midterm election", "midterm elections",
+            "senate race", "senate races",
+            "house race", "house races",
+            "congressional race", "congressional races",
+            "gubernatorial", "governor's race",
+            "control of congress", "control of the senate",
+            "control of the house",
+            "2026 election", "2026 elections", "2026 midterms",
+        ],
+        "context_issues": [
+            "immigration", "economy", "inflation", "abortion", "border",
+            "tariff", "tariffs", "healthcare", "health care", "crime",
+            "gun", "deportation", "housing", "jobs", "wages",
+        ],
+        "context_terms": [
+            "midterm", "midterms", "election", "elections", "campaign",
+            "candidate", "ballot", "voters", "primary",
+            "senate race", "house race",
+        ],
+        "exclude_terms": [
+            "hall of fame", "conclave", "papal", "pope",
+            "nascar", "derby", "grand prix", "marathon",
+        ],
+    },
+
+    # BROAD -- any election/campaign/issue term. Max recall, accepts noise
+    # (general political stories that merely mention an issue). No gating.
+    "midterms-broad": {
+        "keywords": [
+            "midterm", "midterms", "midterm election", "midterm elections",
+            "senate race", "senate races", "house race", "house races",
+            "congressional race", "congressional races",
+            "gubernatorial", "governor's race",
+            "control of congress", "control of the senate", "control of the house",
+            "2026 election", "2026 elections", "2026 midterms",
+            "election", "elections", "campaign", "candidate", "primary",
+            "ballot", "voters", "turnout", "senate", "house", "congress",
+            "congressional", "poll", "polls", "democrat", "republican",
+            "immigration", "economy", "inflation", "abortion", "border",
+            "tariff", "healthcare",
+        ],
+        "exclude_terms": [
             "hall of fame", "conclave", "papal", "pope",
             "nascar", "derby", "grand prix", "marathon",
         ],
     },
 }
 
-# Which topics to process (list of keys, or None for all)
-ACTIVE_TOPICS = None
+# Which topics to process (list of keys, or None for all).
+# Focus on the midterms study: only the three tiers regenerate each run. The
+# old topics (minneapolis-ice, greenland-trump) stay defined and their raw data
+# is retained, but their clean files freeze in place -- kept, not deleted.
+ACTIVE_TOPICS = ["midterms-focused", "midterms-medium", "midterms-broad"]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # FILE PATHS

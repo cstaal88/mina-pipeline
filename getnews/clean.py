@@ -111,6 +111,26 @@ def has_excluded_terms(story: dict, exclude_terms: list[str]) -> bool:
     return any(term in text for term in exclude_terms)
 
 
+def matches_gated_issues(story: dict, topic: dict) -> bool:
+    """
+    Context-gated issue match, for tiers that want issue coverage without the
+    noise of bare issue terms. A story qualifies only if it mentions BOTH an
+    issue term (context_issues) AND an election-context term (context_terms) --
+    e.g. "immigration" is kept only alongside "midterm"/"election"/"campaign".
+
+    Topics without both lists (focused, broad) get no gating and this is a
+    no-op, so they keep matching on plain keywords exactly as before.
+    """
+    issues = topic.get("context_issues")
+    context = topic.get("context_terms")
+    if not issues or not context:
+        return False
+    title = (story.get("title") or "").lower()
+    summary = (story.get("summary") or story.get("description") or "").lower()
+    text = f"{title} {summary}"
+    return any(i in text for i in issues) and any(c in text for c in context)
+
+
 def is_english(story: dict) -> bool:
     """Check if story is in English using langdetect."""
     title = story.get("title") or ""
@@ -457,15 +477,22 @@ def main() -> int:
             print(f"  Unknown topic: {topic_name}")
             continue
 
-        keywords = TOPICS[topic_name]["keywords"]
-        exclude_terms = TOPICS[topic_name].get("exclude_terms", [])
+        topic_cfg = TOPICS[topic_name]
+        keywords = topic_cfg["keywords"]
+        exclude_terms = topic_cfg.get("exclude_terms", [])
 
-        # Filter raw records for this topic (loose match first, then strict)
+        # Filter raw records for this topic (loose match first, then strict).
+        # A record qualifies via plain keywords OR via a context-gated issue
+        # match (issue term + election-context term) -- the latter is how the
+        # "medium" tier picks up issue coverage; focused/broad have no gate.
         # Apply: strict keywords, excluded domains, global filters, topic-specific exclusions
-        topic_raw = [r for r in all_raw if matches_keywords(r, keywords)]
+        topic_raw = [
+            r for r in all_raw
+            if matches_keywords(r, keywords) or matches_gated_issues(r, topic_cfg)
+        ]
         topic_clean = [
             r for r in topic_raw
-            if matches_strict_keywords(r, keywords)
+            if (matches_strict_keywords(r, keywords) or matches_gated_issues(r, topic_cfg))
             and r.get("media_url", "") not in EXCLUDED_FROM_CLEAN
             and passes_global_filters(r)[0]
             and not has_excluded_terms(r, exclude_terms)
@@ -557,9 +584,12 @@ def main() -> int:
     print("  Clean files (from entire archive):")
     for topic_name in topic_keys:
         if topic_name in TOPICS:
-            keywords = TOPICS[topic_name]["keywords"]
-            topic_raw = [r for r in all_raw if matches_keywords(r, keywords)]
-            topic_clean = [r for r in topic_raw if matches_strict_keywords(r, keywords)]
+            cfg = TOPICS[topic_name]
+            keywords = cfg["keywords"]
+            topic_raw = [r for r in all_raw
+                         if matches_keywords(r, keywords) or matches_gated_issues(r, cfg)]
+            topic_clean = [r for r in topic_raw
+                           if matches_strict_keywords(r, keywords) or matches_gated_issues(r, cfg)]
             print(f"    {topic_name}: {len(topic_clean)} stories (from {len(topic_raw)} raw matches)")
 
     if upload_failed:
