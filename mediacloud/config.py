@@ -133,11 +133,16 @@ TOPICS = {
         # API quota across all 17 outlets -- check mediacloud/quota.py first.
         "start_date": date(2026, 7, 1),
         # COLLECTION filter: the only thing limiting what the API returns,
-        # since the workflow runs with --nofilter. Deliberately built from
-        # high-precision phrases rather than bare "election"/"vote"/"poll",
-        # which would match foreign elections, floor votes, and opinion polls.
+        # since the workflow runs with --nofilter. Built to feed the MEDIUM
+        # clean tier (getnews/config.py): a high-precision horse-race core, PLUS
+        # policy issues gated by an election-context term so bare "immigration"
+        # etc. don't flood in. Measured ~166 stories/day across ~16 outlets
+        # (~2x the horse-race-only core); ~16 quota hits/day, well within budget.
+        # Collect-broad-filter-to-tiers: this is the broadest we collect, and the
+        # focused/medium clean filters subset it downstream.
         "query": (
             '('
+            # -- horse-race core --
             '"midterm election" OR "midterm elections" OR midterms '
             'OR "Senate race" OR "Senate races" '
             'OR "House race" OR "House races" '
@@ -146,6 +151,13 @@ TOPICS = {
             'OR "control of the House" '
             'OR ("2026" AND (election OR elections) '
             'AND (Senate OR House OR governor OR congressional)) '
+            # -- policy issues, gated by election context --
+            'OR ( '
+            '(immigration OR economy OR inflation OR abortion OR border '
+            'OR tariffs OR healthcare OR deportation OR crime) '
+            'AND (midterm OR midterms OR election OR campaign OR candidate '
+            'OR "Senate race" OR "House race" OR ballot OR primary OR voters) '
+            ') '
             ')'
         ),
         "outlets": ALL_OUTLETS,
