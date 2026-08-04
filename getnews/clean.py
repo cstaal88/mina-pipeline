@@ -24,6 +24,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -44,6 +45,11 @@ from config import (
 # indistinguishable from "file not found" -- see GistError.
 GIST_TIMEOUT = 120
 GIST_UPLOAD_TIMEOUT = 120
+
+# GitHub's API throws transient 502s a few times a day, usually on the large
+# raw.jsonl PATCH. Same-content re-uploads are idempotent, so retrying is safe.
+GIST_UPLOAD_ATTEMPTS = 3
+GIST_RETRY_DELAY = 5  # seconds; doubles per attempt (5s, then 10s)
 
 
 def generate_id(url: str) -> str:
@@ -319,34 +325,58 @@ def gist_upload(filename: str, filepath: Path) -> bool:
     a new topic's clean file fails. Fall back to --add, which creates it. --add
     takes the gist filename from the local file's basename, so stage a copy
     under the right name when they differ.
+
+    Both calls are retried, since transient API errors clear within seconds --
+    see GIST_UPLOAD_ATTEMPTS.
     """
     try:
-        result = subprocess.run(
-            ["gh", "gist", "edit", GIST_ID, "-f", filename, str(filepath)],
-            capture_output=True,
-            text=True,
-            timeout=GIST_UPLOAD_TIMEOUT,
-        )
-        if result.returncode == 0:
-            return True
+        for attempt in range(1, GIST_UPLOAD_ATTEMPTS + 1):
+            result = subprocess.run(
+                ["gh", "gist", "edit", GIST_ID, "-f", filename, str(filepath)],
+                capture_output=True,
+                text=True,
+                timeout=GIST_UPLOAD_TIMEOUT,
+            )
+            if result.returncode == 0:
+                return True
 
-        if filename in gist_list_files():
-            print(f"  Warning: gist edit failed: {result.stderr.strip()}")
-            return False
+            if filename not in gist_list_files():
+                break  # edit can't create a file; fall through to --add
+
+            if attempt == GIST_UPLOAD_ATTEMPTS:
+                print(f"  Warning: gist edit failed: {result.stderr.strip()}")
+                return False
+
+            delay = GIST_RETRY_DELAY * 2 ** (attempt - 1)
+            print(
+                f"  gist edit failed ({result.stderr.strip()}) - "
+                f"retrying in {delay}s (attempt {attempt}/{GIST_UPLOAD_ATTEMPTS})"
+            )
+            time.sleep(delay)
 
         print(f"  {filename} not in gist yet - adding it")
         with tempfile.TemporaryDirectory() as tmpdir:
             staged = Path(tmpdir) / filename
             shutil.copyfile(filepath, staged)
-            add_result = subprocess.run(
-                ["gh", "gist", "edit", GIST_ID, "--add", str(staged)],
-                capture_output=True,
-                text=True,
-                timeout=GIST_UPLOAD_TIMEOUT,
-            )
-        if add_result.returncode != 0:
-            print(f"  Warning: gist add failed: {add_result.stderr.strip()}")
-        return add_result.returncode == 0
+            for attempt in range(1, GIST_UPLOAD_ATTEMPTS + 1):
+                add_result = subprocess.run(
+                    ["gh", "gist", "edit", GIST_ID, "--add", str(staged)],
+                    capture_output=True,
+                    text=True,
+                    timeout=GIST_UPLOAD_TIMEOUT,
+                )
+                if add_result.returncode == 0:
+                    return True
+                if attempt == GIST_UPLOAD_ATTEMPTS:
+                    break
+                delay = GIST_RETRY_DELAY * 2 ** (attempt - 1)
+                print(
+                    f"  gist add failed ({add_result.stderr.strip()}) - "
+                    f"retrying in {delay}s (attempt {attempt}/{GIST_UPLOAD_ATTEMPTS})"
+                )
+                time.sleep(delay)
+        print(f"  Warning: gist add failed: {add_result.stderr.strip()}")
+        return False
     except GistError:
         raise
     except Exception as e:
