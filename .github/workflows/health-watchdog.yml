@@ -1,0 +1,119 @@
+# .github/workflows/health-watchdog.yml
+# Independent watchdog over the collection pipeline.
+#
+# Deliberately NOT triggered by the RSS pipeline failing. The RSS pipeline is
+# fired externally by cron-job.org, so its worst failure mode is silence: if the
+# trigger dies, no run ever fails -- runs simply stop happening, and anything
+# keyed to "on failure" stays quiet forever. This runs on GitHub's own schedule
+# and inspects the DATA, so silence is detectable.
+#
+# It opens a GitHub issue when getnews/health.py reports a real problem, and
+# closes it again on recovery. Transient run failures are only warnings and do
+# not raise an issue -- alerting on daily noise is how alerts get ignored.
+
+name: "Pipeline Health Watchdog"
+
+on:
+  schedule:
+    # Every 2 hours, offset off the hour to avoid GitHub's peak-of-hour queue.
+    - cron: '7 */2 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: health-watchdog
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run health check
+        id: health
+        env:
+          # GIST_PAT: the check reads the gist. The built-in GITHUB_TOKEN cannot
+          # -- gists are not repo-scoped.
+          GH_TOKEN: ${{ secrets.GIST_PAT }}
+        run: |
+          set +e
+          python3 getnews/health.py > health-report.txt 2>&1
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          cat health-report.txt
+
+      - name: Open alert issue
+        if: steps.health.outputs.exit_code != '0'
+        env:
+          # Built-in token here: issue writes are repo-scoped, and this keeps the
+          # long-lived GIST_PAT out of a step that does not need it.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          LABEL="pipeline-health"
+          gh label create "$LABEL" --color B60205 \
+            --description "Automated pipeline health alerts" 2>/dev/null || true
+
+          EXISTING=$(gh issue list --label "$LABEL" --state open \
+            --json number --jq '.[0].number // empty')
+
+          if [ -n "$EXISTING" ]; then
+            echo "Issue #$EXISTING is already open for this outage - not commenting again."
+            echo "(Re-alerting every 2 hours is noise; the open issue is the alert.)"
+            exit 0
+          fi
+
+          {
+            echo "The automated health check is reporting a problem."
+            echo
+            echo '```'
+            cat health-report.txt
+            echo '```'
+            echo
+            echo "**What to do:** run \`python3 getnews/health.py --deep\` locally"
+            echo "for the full picture, including a byte-for-byte check of the"
+            echo "frozen archive."
+            echo
+            echo "This issue closes itself when the next check passes."
+            echo
+            echo "_Raised by [this run](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})._"
+          } > body.md
+
+          gh issue create \
+            --title "🔴 MINA pipeline health check failing" \
+            --label "$LABEL" \
+            --body-file body.md
+
+      - name: Close alert issue on recovery
+        if: steps.health.outputs.exit_code == '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          LABEL="pipeline-health"
+          EXISTING=$(gh issue list --label "$LABEL" --state open \
+            --json number --jq '.[0].number // empty' 2>/dev/null || true)
+
+          if [ -n "${EXISTING:-}" ]; then
+            gh issue close "$EXISTING" --comment \
+              "Health check is green again as of $(date -u +'%Y-%m-%d %H:%M UTC'). Closing automatically."
+          else
+            echo "Healthy, no open alert. Nothing to do."
+          fi
+
+      - name: Fail the run if the check failed
+        if: steps.health.outputs.exit_code != '0'
+        run: |
+          echo "Health check reported a problem - see the issue and the report above."
+          exit 1

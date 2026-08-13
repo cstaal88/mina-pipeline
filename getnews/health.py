@@ -43,6 +43,11 @@ WORKFLOW = "rss-pipeline.yml"
 FRESH_OK_MINUTES = 90
 FRESH_WARN_MINUTES = 180
 
+# This repo sees a few transient run failures a day (GitHub 502s, feed timeouts)
+# that clear on their own. Alerting on those trains you to ignore alerts, so a
+# single failure is only a WARN -- it takes a sustained run of them to FAIL.
+CONSECUTIVE_FAILURES_FAIL = 3
+
 OK, WARN, FAIL = "OK", "WARN", "FAIL"
 
 
@@ -263,9 +268,14 @@ def check_runs() -> Check:
                 if failures > 2 else "")
         return Check("Workflow runs", status, detail, note)
 
-    return Check("Workflow runs", FAIL,
-                 f"{consecutive_failures} consecutive failures, latest {latest[0]}",
-                 f"Inspect with:  gh run list --workflow={WORKFLOW}")
+    # Failing now. One or two in a row is the usual transient noise; a sustained
+    # run of them is the real thing. Only the latter is worth waking anyone for.
+    detail = f"{consecutive_failures} consecutive failure(s), latest {latest[0]}"
+    hint = f"Inspect with:  gh run list --workflow={WORKFLOW}"
+    if consecutive_failures < CONSECUTIVE_FAILURES_FAIL:
+        return Check("Workflow runs", WARN, detail,
+                     "Transient so far — data is still arriving (see Last write). " + hint)
+    return Check("Workflow runs", FAIL, detail, hint)
 
 
 def check_corpus(files: dict[str, int]) -> Check:
