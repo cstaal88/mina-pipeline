@@ -1,0 +1,84 @@
+2026-08-13T04:48:32.4007556Z ##[group]Run echo "=== Processing topics ==="
+2026-08-13T04:48:32.4007927Z [36;1mecho "=== Processing topics ==="[0m
+2026-08-13T04:48:32.4008197Z [36;1mcd getnews[0m
+2026-08-13T04:48:32.4008418Z [36;1mpython3 clean.py --push[0m
+2026-08-13T04:48:32.4052455Z shell: /usr/bin/bash -e {0}
+2026-08-13T04:48:32.4052702Z env:
+2026-08-13T04:48:32.4053106Z   GH_TOKEN: ***
+2026-08-13T04:48:32.4053390Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-08-13T04:48:32.4053828Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+2026-08-13T04:48:32.4054266Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-08-13T04:48:32.4054646Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-08-13T04:48:32.4055029Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-08-13T04:48:32.4055409Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+2026-08-13T04:48:32.4055906Z ##[endgroup]
+2026-08-13T04:48:32.4117234Z === Processing topics ===
+2026-08-13T04:49:27.5017093Z === CLEAN (Unified) ===
+2026-08-13T04:49:27.5017691Z Mode: PUSH (will update gist)
+2026-08-13T04:49:27.5018169Z Gist: 16c75a94d276d2800a44e3c2437f40e4
+2026-08-13T04:49:27.5018752Z 
+2026-08-13T04:49:27.5019252Z Loaded 301 stories from /home/runner/work/mina-pipeline/mina-pipeline/getnews/data/tmp-news.json
+2026-08-13T04:49:27.5019742Z 
+2026-08-13T04:49:27.5019877Z === SAVING ALL STORIES TO RAW ARCHIVE ===
+2026-08-13T04:49:27.5020347Z Archiving all 301 stories (no topic filtering)
+2026-08-13T04:49:27.5021327Z   → Future-proof: enables any topic analysis retroactively
+2026-08-13T04:49:27.5021636Z 
+2026-08-13T04:49:27.5021776Z Downloading existing raw.jsonl from gist...
+2026-08-13T04:49:27.5022492Z   Backup saved: /home/runner/work/mina-pipeline/mina-pipeline/getnews/data/test/unified/raw-backup-before-push.jsonl
+2026-08-13T04:49:27.5023182Z   Existing records: 46461
+2026-08-13T04:49:27.5023395Z 
+2026-08-13T04:49:27.5023523Z Downloading MediaCloud data to merge...
+2026-08-13T04:49:27.5023869Z   MediaCloud records available: 23951
+2026-08-13T04:49:27.5024218Z   New MediaCloud records merged: 212
+2026-08-13T04:49:27.5024545Z   Skipped (already in raw): 23739
+2026-08-13T04:49:27.5024846Z   Total after merge: 46673
+2026-08-13T04:49:27.5025026Z 
+2026-08-13T04:49:27.5025126Z === NEW DATA SUMMARY ===
+2026-08-13T04:49:27.5025405Z New records (after dedupe): 278
+2026-08-13T04:49:27.5025768Z   → Added 278 new stories to archive
+2026-08-13T04:49:27.5025973Z 
+2026-08-13T04:49:27.5026088Z Saved raw.jsonl: 46951 total records
+2026-08-13T04:49:27.5026289Z 
+2026-08-13T04:49:27.5026459Z === REGENERATING CLEAN FILES (from all 46951 records) ===
+2026-08-13T04:49:27.5026851Z Processing 3 topic(s)...
+2026-08-13T04:49:27.5027184Z   midterms-focused: 541 raw → 460 clean
+2026-08-13T04:49:27.5027660Z     └─ 18 content duplicates removed (syndication/URL variants)
+2026-08-13T04:49:27.5028291Z     └─ 81 filtered out (non-English, excluded domains, or strict keyword mismatch)
+2026-08-13T04:49:27.5028995Z   midterms-medium: 805 raw → 684 clean
+2026-08-13T04:49:27.5029459Z     └─ 25 content duplicates removed (syndication/URL variants)
+2026-08-13T04:49:27.5030087Z     └─ 121 filtered out (non-English, excluded domains, or strict keyword mismatch)
+2026-08-13T04:49:27.5030643Z   midterms-broad: 6928 raw → 6002 clean
+2026-08-13T04:49:27.5031063Z     └─ 347 content duplicates removed (syndication/URL variants)
+2026-08-13T04:49:27.5031576Z     └─ 926 filtered out (non-English, excluded domains, or strict keyword mismatch)
+2026-08-13T04:49:27.5031879Z 
+2026-08-13T04:49:27.5032137Z All files saved to /home/runner/work/mina-pipeline/mina-pipeline/getnews/data/test/unified/
+2026-08-13T04:49:27.5032508Z 
+2026-08-13T04:49:27.5032604Z Uploading to gist...
+2026-08-13T04:49:27.5033060Z   gist edit failed (HTTP 422: Validation Failed (https://api.github.com/gists/16c75a94d276d2800a44e3c2437f40e4)
+2026-08-13T04:49:27.5033720Z contents are too large and cannot be saved) - retrying in 5s (attempt 1/3)
+2026-08-13T04:49:27.5034341Z   gist edit failed (HTTP 422: Validation Failed (https://api.github.com/gists/16c75a94d276d2800a44e3c2437f40e4)
+2026-08-13T04:49:27.5035411Z contents are too large and cannot be saved) - retrying in 10s (attempt 2/3)
+2026-08-13T04:49:27.5036052Z   Warning: gist edit failed: HTTP 422: Validation Failed (https://api.github.com/gists/16c75a94d276d2800a44e3c2437f40e4)
+2026-08-13T04:49:27.5036598Z contents are too large and cannot be saved
+2026-08-13T04:49:27.5036910Z   ✗ raw.jsonl (failed)
+2026-08-13T04:49:27.5037170Z   ✓ clean-midterms-focused.jsonl
+2026-08-13T04:49:27.5037458Z   ✓ clean-midterms-medium.jsonl
+2026-08-13T04:49:27.5037739Z   ✓ clean-midterms-broad.jsonl
+2026-08-13T04:49:27.5037900Z 
+2026-08-13T04:49:27.5038055Z Gist: https://gist.github.com/16c75a94d276d2800a44e3c2437f40e4
+2026-08-13T04:49:27.5038308Z 
+2026-08-13T04:49:27.5038403Z ==================================================
+2026-08-13T04:49:27.5039010Z FINAL SUMMARY
+2026-08-13T04:49:27.5039220Z ==================================================
+2026-08-13T04:49:27.5039507Z   Fetched: 301 stories from RSS feeds
+2026-08-13T04:49:27.5039835Z   Archived: 301 stories (saves everything for future analysis)
+2026-08-13T04:49:27.5040256Z   New records: +278 added → 46951 total in archive
+2026-08-13T04:49:27.5040456Z 
+2026-08-13T04:49:27.5040557Z   Clean files (from entire archive):
+2026-08-13T04:49:27.5040860Z     midterms-focused: 541 stories (from 541 raw matches)
+2026-08-13T04:49:27.5041205Z     midterms-medium: 805 stories (from 805 raw matches)
+2026-08-13T04:49:27.5041539Z     midterms-broad: 6928 stories (from 6928 raw matches)
+2026-08-13T04:49:27.5041754Z 
+2026-08-13T04:49:27.5041907Z One or more gist uploads FAILED (see ✗ above).
+2026-08-13T04:49:27.6100697Z ##[error]Process completed with exit code 1.
+

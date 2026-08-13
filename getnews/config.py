@@ -19,14 +19,46 @@ TEST_DIR = DATA_DIR / "test"
 # GIST STORAGE
 # ─────────────────────────────────────────────────────────────────────────────
 # Single gist with all data:
-#   - raw.jsonl: EVERY story fetched, no topic filtering (RSS + MediaCloud merged)
-#   - clean-{topic}.jsonl: strict filtered per topic, regenerated from raw each run
+#   - raw-YYYY-MM.jsonl: EVERY story fetched, no topic filtering, one file per
+#     month (RSS + MediaCloud merged)
+#   - raw.jsonl: the original single-file archive, now FROZEN -- see below
+#   - clean-{topic}.jsonl: strict filtered per topic, regenerated from the whole
+#     archive (frozen file + every shard) each run
 
 GIST_ID = "16c75a94d276d2800a44e3c2437f40e4"
 
 # Old per-topic gists (kept for migration reference):
 # minneapolis-ice: 839f9f409d36d715d277095886ced536
 # greenland-trump: a046f4a9233ff2e499dfeb356e081d79
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ARCHIVE SHARDING
+# ─────────────────────────────────────────────────────────────────────────────
+# The archive is written one file per calendar month: raw-YYYY-MM.jsonl.
+#
+# Why: the single raw.jsonl reached 41,938,578 bytes on 2026-08-11 and the Gist
+# API refused every write after that with HTTP 422 "contents are too large".
+# Collection froze for two days and 78 consecutive workflow runs failed. Monthly
+# shards run ~23 MB, so no single write approaches the ceiling again.
+#
+# LEGACY_ARCHIVE is that original file, frozen at 46,461 records (last write
+# 2026-08-11T14:18:33Z). It is READ every run -- dedupe and the MediaCloud merge
+# both need the full history -- and NEVER written again. It is already over the
+# API's write ceiling, so it is immutable in practice as well as by policy.
+#
+# NOTE: August 2026 is split. Aug 1-11 lives in the frozen file; Aug 13 onward
+# lives in raw-2026-08.jsonl. Everything that reads the archive reads both, so
+# this is invisible to analysis -- but it matters when citing the corpus.
+
+LEGACY_ARCHIVE = "raw.jsonl"
+SHARD_PATTERN = r"^raw-\d{4}-\d{2}\.jsonl$"
+
+# Tripwire, not a workflow: monthly shards should sit near 23 MB. If one gets
+# close to the write ceiling something unexpected happened (most likely a large
+# MediaCloud backfill landing inside one month). Abort with instructions rather
+# than rediscover the ceiling as an opaque HTTP 422.
+SHARD_SIZE_WARN = 30 * 1024 * 1024
+SHARD_SIZE_ABORT = 38 * 1024 * 1024
 
 # ─────────────────────────────────────────────────────────────────────────────
 # FETCH SETTINGS

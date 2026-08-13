@@ -20,6 +20,7 @@ Data Sources:
 
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -38,6 +39,10 @@ from config import (
     TEST_DIR,
     EXCLUDED_FROM_CLEAN,
     GLOBAL_FILTERS,
+    LEGACY_ARCHIVE,
+    SHARD_PATTERN,
+    SHARD_SIZE_WARN,
+    SHARD_SIZE_ABORT,
 )
 
 # raw.jsonl passed 17 MB in mid-2026 and grows daily. The old 30s read timeout
@@ -282,6 +287,34 @@ def gist_list_files() -> set[str]:
     return {line.strip() for line in result.stdout.splitlines() if line.strip()}
 
 
+def current_shard_name(now: datetime | None = None) -> str:
+    """
+    Archive file this run writes to: raw-YYYY-MM.jsonl.
+
+    Records are filed by COLLECTION date, not publish date, so a run only ever
+    writes one file. Filing by publish date would let a story published in June
+    but collected today reopen June's shard -- more files written per run, and
+    more chances to damage one that was already complete. Analysis filters on
+    publish_date across the whole archive anyway, so nothing is lost.
+    """
+    now = now or datetime.now(timezone.utc)
+    return f"raw-{now:%Y-%m}.jsonl"
+
+
+def archive_filenames() -> list[str]:
+    """
+    Every archive file in the gist, oldest first: the frozen legacy file (if
+    still present) followed by each monthly shard in chronological order.
+
+    Read in full every run -- dedupe and the MediaCloud merge are only correct
+    if they can see the entire history.
+    """
+    files = gist_list_files()
+    shards = sorted(f for f in files if re.match(SHARD_PATTERN, f))
+    legacy = [LEGACY_ARCHIVE] if LEGACY_ARCHIVE in files else []
+    return legacy + shards
+
+
 def gist_download(filename: str) -> str | None:
     """
     Download a file from the unified gist.
@@ -329,6 +362,16 @@ def gist_upload(filename: str, filepath: Path) -> bool:
     Both calls are retried, since transient API errors clear within seconds --
     see GIST_UPLOAD_ATTEMPTS.
     """
+    if filename == LEGACY_ARCHIVE:
+        # Belt and braces. The frozen archive is already past the API's write
+        # ceiling, so an attempt would fail anyway -- but if anyone ever trims
+        # it back under the limit, that accidental write would reopen the file
+        # to exactly the wipe risk it is now immune to. Refuse it outright.
+        raise GistError(
+            f"refusing to upload {LEGACY_ARCHIVE}: the frozen archive is "
+            f"read-only. New records belong in {current_shard_name()}."
+        )
+
     try:
         for attempt in range(1, GIST_UPLOAD_ATTEMPTS + 1):
             result = subprocess.run(
@@ -420,32 +463,49 @@ def main() -> int:
     # Format all stories for raw.jsonl
     formatted = [format_story_for_raw(s) for s in stories]
 
-    # Load existing raw data (RSS + MediaCloud unified dataset)
+    # Load the existing archive: the frozen legacy file plus every monthly shard.
     existing_raw = []
-    # How many records the gist's raw.jsonl held before this run. The upload is
-    # blocked below if we somehow ended up with fewer -- the archive must never
-    # shrink.
+    # Records already in THIS month's shard -- the only archive file a run ever
+    # rewrites. Kept separate so the shrink guard below can check it on its own.
+    shard_existing = []
+    # MediaCloud records newly merged this run; they are appended to the current
+    # shard alongside the new RSS records.
+    new_mc = []
+    # How many records the whole archive held before this run. The upload is
+    # blocked below if we somehow ended up with fewer -- it must never shrink.
     gist_raw_count = 0
     local_dir = TEST_DIR / "unified"
-    local_raw = local_dir / "raw.jsonl"
+    shard_name = current_shard_name()
+    local_shard = local_dir / shard_name
 
     if push:
-        print("\nDownloading existing raw.jsonl from gist...")
-        # Raises GistError if the download fails; only returns None when the
-        # gist truly has no raw.jsonl yet (i.e. a genuinely fresh start).
-        content = gist_download("raw.jsonl")
-        if content is None:
-            print("  Gist has no raw.jsonl yet - starting fresh")
-        else:
-            # Save backup
-            backup_file = local_dir / "raw-backup-before-push.jsonl"
+        print(f"\nDownloading existing archive from gist (writing to {shard_name})...")
+        # Raises GistError if a download fails; only returns None when the gist
+        # genuinely lacks the file -- e.g. this month's shard on its first run.
+        for fname in archive_filenames():
+            content = gist_download(fname)
+            if content is None:
+                continue
+
+            # Back up every file we read, so any bad run stays reversible from
+            # the runner's working directory. Deliberately not named *.jsonl:
+            # backups must never be picked up as archive files themselves.
+            backup_file = local_dir / f"{fname}.backup-before-push"
             backup_file.parent.mkdir(parents=True, exist_ok=True)
             backup_file.write_text(content, encoding="utf-8")
-            print(f"  Backup saved: {backup_file}")
 
-            existing_raw = parse_jsonl_content(content)
-            gist_raw_count = len(existing_raw)
-            print(f"  Existing records: {len(existing_raw)}")
+            records = parse_jsonl_content(content)
+            existing_raw.extend(records)
+            if fname == shard_name:
+                shard_existing = records
+            label = " (frozen, read-only)" if fname == LEGACY_ARCHIVE else ""
+            print(f"  {fname}: {len(records)} records{label}")
+
+        gist_raw_count = len(existing_raw)
+        if gist_raw_count == 0:
+            print("  Gist has no archive yet - starting fresh")
+        else:
+            print(f"  Archive total: {gist_raw_count} records")
 
         # Also download and merge MediaCloud data (dedupe by URL)
         print("\nDownloading MediaCloud data to merge...")
@@ -453,30 +513,40 @@ def main() -> int:
         if mediacloud_content:
             mediacloud_records = parse_jsonl_content(mediacloud_content)
             print(f"  MediaCloud records available: {len(mediacloud_records)}")
-            
+
             # Add source identifier to MediaCloud records if not present
             for record in mediacloud_records:
                 if "collected_with" not in record:
                     record["collected_with"] = "mediacloud"
-            
-            # Only add MC records not already in raw.jsonl (by normalized URL)
+
+            # Only add MC records not already anywhere in the archive (by URL).
+            # This is why the frozen file must still be read every run: skip it
+            # and all ~24k historical MC records look new again.
             existing_urls = {normalize_url(r.get("url", "")) for r in existing_raw}
             new_mc = [r for r in mediacloud_records if normalize_url(r.get("url", "")) not in existing_urls]
             existing_raw.extend(new_mc)
             print(f"  New MediaCloud records merged: {len(new_mc)}")
-            print(f"  Skipped (already in raw): {len(mediacloud_records) - len(new_mc)}")
+            print(f"  Skipped (already in archive): {len(mediacloud_records) - len(new_mc)}")
             print(f"  Total after merge: {len(existing_raw)}")
         else:
             print("  No MediaCloud data found to merge")
     else:
-        existing_raw = load_jsonl(local_raw)
+        # Local mode: same two-part archive, read off disk. Match filenames the
+        # same way as the gist path so stray files can't be mistaken for shards.
+        for path in sorted(local_dir.glob("*.jsonl")):
+            if path.name != LEGACY_ARCHIVE and not re.match(SHARD_PATTERN, path.name):
+                continue
+            records = load_jsonl(path)
+            existing_raw.extend(records)
+            if path.name == shard_name:
+                shard_existing = records
         if existing_raw:
             print(f"Existing local records: {len(existing_raw)}")
 
-    # Merge and dedupe by normalized URL
+    # Merge and dedupe by normalized URL, against the archive as a whole
     existing_urls = {normalize_url(r.get("url", "")) for r in existing_raw}
     new_records = [r for r in formatted if normalize_url(r.get("url", "")) not in existing_urls]
-    
+
     print(f"\n=== NEW DATA SUMMARY ===")
     print(f"New records (after dedupe): {len(new_records)}")
     if len(new_records) == 0:
@@ -484,17 +554,22 @@ def main() -> int:
         print("  → No duplicates - RSS feeds contained no new content")
     else:
         print(f"  → Added {len(new_records)} new stories to archive")
-    
+
     all_raw = existing_raw + new_records
 
-    # Save raw.jsonl
-    raw_meta = {
+    # Save this month's shard. Everything new this run lands here; the frozen
+    # legacy file and every past shard are left exactly as they were.
+    shard_records = shard_existing + new_mc + new_records
+    shard_meta = {
         "_meta": True,
-        "record_count": len(all_raw),
+        "shard": shard_name,
+        "record_count": len(shard_records),
+        "archive_total": len(all_raw),
         "last_updated": datetime.now(timezone.utc).isoformat(),
     }
-    save_jsonl(local_raw, all_raw, raw_meta)
-    print(f"\nSaved raw.jsonl: {len(all_raw)} total records")
+    save_jsonl(local_shard, shard_records, shard_meta)
+    print(f"\nSaved {shard_name}: {len(shard_records)} records "
+          f"(archive total: {len(all_raw)})")
 
     # Generate clean files for each active topic
     topic_keys = ACTIVE_TOPICS or list(TOPICS.keys())
@@ -576,22 +651,50 @@ def main() -> int:
     # Push to gist if requested
     upload_failed = False
     if push:
-        # Last line of defence: whatever else went wrong, never publish a
-        # raw.jsonl smaller than the one we downloaded.
+        # Last line of defence: whatever else went wrong, never publish an
+        # archive smaller than the one we downloaded -- checked both on the one
+        # file we rewrite and on the archive as a whole.
+        if len(shard_records) < len(shard_existing):
+            print(
+                f"\nABORT: refusing to upload - {shard_name} would shrink from "
+                f"{len(shard_existing)} to {len(shard_records)} records. "
+                f"Nothing was pushed; the gist is untouched."
+            )
+            return 1
+
         if len(all_raw) < gist_raw_count:
             print(
-                f"\nABORT: refusing to upload - raw.jsonl would shrink from "
+                f"\nABORT: refusing to upload - the archive would shrink from "
                 f"{gist_raw_count} to {len(all_raw)} records. "
                 f"Nothing was pushed; the gist is untouched."
             )
             return 1
 
+        # Catch the write ceiling ourselves, while the message can still say what
+        # to do about it. Left to the API this arrives as an opaque HTTP 422 that
+        # froze collection for two days in Aug 2026. See SHARD_SIZE_ABORT.
+        shard_mb = local_shard.stat().st_size / 1024 / 1024
+        if local_shard.stat().st_size >= SHARD_SIZE_ABORT:
+            print(
+                f"\nABORT: {shard_name} is {shard_mb:.1f} MB, too close to the "
+                f"Gist API write ceiling (~40 MB). Nothing was pushed.\n"
+                f"  Fix: freeze this shard and start a new one (e.g. rename the "
+                f"month's file to {shard_name.replace('.jsonl', '-part1.jsonl')} "
+                f"in the gist), then re-run."
+            )
+            return 1
+        if local_shard.stat().st_size >= SHARD_SIZE_WARN:
+            print(
+                f"\n  Warning: {shard_name} is {shard_mb:.1f} MB and the write "
+                f"ceiling is ~40 MB. Plan to split this month soon."
+            )
+
         print("\nUploading to gist...")
 
-        if gist_upload("raw.jsonl", local_raw):
-            print("  ✓ raw.jsonl")
+        if gist_upload(shard_name, local_shard):
+            print(f"  ✓ {shard_name}")
         else:
-            print("  ✗ raw.jsonl (failed)")
+            print(f"  ✗ {shard_name} (failed)")
             upload_failed = True
 
         for filename, filepath in clean_files.items():
@@ -610,6 +713,7 @@ def main() -> int:
     print(f"  Fetched: {len(stories)} stories from RSS feeds")
     print(f"  Archived: {len(formatted)} stories (saves everything for future analysis)")
     print(f"  New records: +{len(new_records)} added → {len(all_raw)} total in archive")
+    print(f"  Written to: {shard_name} ({len(shard_records)} records this month)")
     print("")
     print("  Clean files (from entire archive):")
     for topic_name in topic_keys:
@@ -635,7 +739,7 @@ if __name__ == "__main__":
     except GistError as e:
         print(f"\nFATAL: {e}", file=sys.stderr)
         print(
-            "Refusing to continue: raw.jsonl is the only copy of the RSS archive, "
+            "Refusing to continue: the gist is the only copy of the RSS archive, "
             "and rebuilding it from scratch would destroy it. Nothing was pushed.",
             file=sys.stderr,
         )
