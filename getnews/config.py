@@ -60,6 +60,14 @@ SHARD_PATTERN = r"^raw-\d{4}-\d{2}\.jsonl$"
 SHARD_SIZE_WARN = 30 * 1024 * 1024
 SHARD_SIZE_ABORT = 38 * 1024 * 1024
 
+# Baseline for the frozen archive, recorded 2026-08-13 from the live gist and
+# verified byte-for-byte against ~/mina-backups-0813/raw-frozen-2026-08-11.jsonl.
+# health.py fails loudly if the live file ever differs from this: it must never
+# change again, so any difference means something is badly wrong.
+FROZEN_ARCHIVE_RECORDS = 46461
+FROZEN_ARCHIVE_BYTES = 41938578
+FROZEN_ARCHIVE_SHA256 = "002fe361940cd1a179a86885c1c431f2e48598e07d81bf84717b1a997bbd066f"
+
 # ─────────────────────────────────────────────────────────────────────────────
 # FETCH SETTINGS
 # ─────────────────────────────────────────────────────────────────────────────
