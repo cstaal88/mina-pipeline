@@ -37,6 +37,15 @@ from config import (  # noqa: E402
 )
 
 WORKFLOW = "rss-pipeline.yml"
+MCLOUD_WORKFLOW = "mcloud-pipeline.yml"
+
+# mediacloud_raw.jsonl is still a single monolithic file written by
+# mcloud-pipeline.yml, which has a shrink guard but NO size guard. It is the
+# same unexploded bug that took raw.jsonl down on 2026-08-11: past the write
+# ceiling the Gist API starts refusing it with an opaque HTTP 422 and collection
+# stops silently. Watch it here until that pipeline is sharded too.
+MEDIACLOUD_ARCHIVE = "mediacloud_raw.jsonl"
+BYTES_PER_RECORD = 928  # measured: 22,381,313 bytes / 24,116 records
 
 # Runs are triggered every 30 minutes. Allow a couple of missed slots before
 # calling it stale -- a single hiccup is noise, an hour of silence is not.
@@ -234,22 +243,52 @@ def check_continuity(shard_records: list[dict]) -> Check:
                  ("…" if len(missing) > 8 else ""))
 
 
-def check_runs() -> Check:
+def check_mediacloud(files: dict[str, int]) -> Check:
+    """
+    Headroom on the one archive still stored as a single file.
+
+    Reported in records rather than megabytes because the thing most likely to
+    blow it is the pending MediaCloud midterms backfill, which adds records in
+    bulk -- "21,000 records left" is actionable before a backfill in a way that
+    "19 MB left" is not.
+    """
+    size = files.get(MEDIACLOUD_ARCHIVE)
+    if size is None:
+        return Check("MediaCloud archive", WARN,
+                     f"{MEDIACLOUD_ARCHIVE} not found in the gist")
+
+    mb = size / 1024 / 1024
+    headroom = (SHARD_SIZE_ABORT - size) // BYTES_PER_RECORD
+    detail = f"{mb:.1f} MB — room for roughly {headroom:,} more records"
+
+    if size >= SHARD_SIZE_ABORT:
+        return Check("MediaCloud archive", FAIL, f"{mb:.1f} MB — past the write ceiling",
+                     "mcloud-pipeline.yml has no size guard: its uploads are "
+                     "failing silently with HTTP 422. Shard it, as raw.jsonl was.")
+    if size >= SHARD_SIZE_WARN:
+        return Check("MediaCloud archive", WARN, detail,
+                     "Approaching the ceiling that broke raw.jsonl. Shard this "
+                     "pipeline before running any further backfill.")
+    return Check("MediaCloud archive", OK, detail)
+
+
+def check_runs(workflow: str = WORKFLOW, label: str = "Workflow runs",
+               fail_after: int = CONSECUTIVE_FAILURES_FAIL) -> Check:
     """Did the pipeline actually run, and did it work?"""
     try:
-        out = gh(["run", "list", f"--workflow={WORKFLOW}", "--limit", "20",
+        out = gh(["run", "list", f"--workflow={workflow}", "--limit", "20",
                   "--json", "conclusion,status,createdAt",
                   "--jq", '.[] | "\\(.createdAt)\\t\\(.status)\\t\\(.conclusion // "-")"'])
     except RuntimeError as e:
-        return Check("Workflow runs", WARN, f"could not read run history ({e})")
+        return Check(label, WARN, f"could not read run history ({e})")
 
     rows = [l.split("\t") for l in out.splitlines() if l.strip()]
     if not rows:
-        return Check("Workflow runs", WARN, "no runs found")
+        return Check(label, WARN, "no runs found")
 
     finished = [r for r in rows if r[1] == "completed"]
     if not finished:
-        return Check("Workflow runs", OK, "a run is in progress")
+        return Check(label, OK, "a run is in progress")
 
     latest = finished[0]
     consecutive_failures = 0
@@ -266,16 +305,16 @@ def check_runs() -> Check:
         status = OK if failures <= 2 else WARN
         note = ("Recovering from a recent outage — the last run worked."
                 if failures > 2 else "")
-        return Check("Workflow runs", status, detail, note)
+        return Check(label, status, detail, note)
 
     # Failing now. One or two in a row is the usual transient noise; a sustained
     # run of them is the real thing. Only the latter is worth waking anyone for.
     detail = f"{consecutive_failures} consecutive failure(s), latest {latest[0]}"
-    hint = f"Inspect with:  gh run list --workflow={WORKFLOW}"
-    if consecutive_failures < CONSECUTIVE_FAILURES_FAIL:
-        return Check("Workflow runs", WARN, detail,
+    hint = f"Inspect with:  gh run list --workflow={workflow}"
+    if consecutive_failures < fail_after:
+        return Check(label, WARN, detail,
                      "Transient so far — data is still arriving (see Last write). " + hint)
-    return Check("Workflow runs", FAIL, detail, hint)
+    return Check(label, FAIL, detail, hint)
 
 
 def check_corpus(files: dict[str, int]) -> Check:
@@ -332,6 +371,10 @@ def main() -> int:
 
     checks.append(check_runs())
     checks.append(check_corpus(files))
+    checks.append(check_mediacloud(files))
+    # Daily cadence, so two failures in a row already means two days of no
+    # backfill -- a lower bar than the 30-minute RSS pipeline warrants.
+    checks.append(check_runs(MCLOUD_WORKFLOW, "MediaCloud runs", fail_after=2))
 
     width = max(len(c.name) for c in checks)
     for c in checks:
