@@ -17,6 +17,18 @@ on:
         description: 'Topic to collect (leave empty for default topic)'
         required: false
         default: ''
+      days:
+        description: 'How many recent days to collect (default 4)'
+        required: false
+        default: '4'
+      since:
+        description: 'Backfill start date YYYY-MM-DD (overrides days)'
+        required: false
+        default: ''
+      until:
+        description: 'Backfill end date YYYY-MM-DD (used with since)'
+        required: false
+        default: ''
 
 concurrency:
   group: mcloud-fetch
@@ -60,6 +72,27 @@ jobs:
           fi
           
           echo "=== Running pipeline for topics: $TOPICS ==="
+
+          # Collection window. --days 2 gave each publication day only two
+          # attempts, the last barely 24h after publication -- inside
+          # MediaCloud's indexing lag. On 2026-08-01 and 2026-08-06 the fetch
+          # ran while those days were still unindexed (3 URLs found across all
+          # 15 sources), the window moved on, and they were never recollected.
+          # Four days gives each day four attempts. Cost is ~16 API calls per
+          # extra day against a 4,000/week budget currently running at ~128.
+          DAYS="${{ github.event.inputs.days }}"
+          DAYS="${DAYS:-4}"
+          SINCE="${{ github.event.inputs.since }}"
+          UNTIL="${{ github.event.inputs.until }}"
+
+          if [ -n "$SINCE" ]; then
+            RANGE_ARGS="--since $SINCE"
+            [ -n "$UNTIL" ] && RANGE_ARGS="$RANGE_ARGS --until $UNTIL"
+            echo "Collection window: explicit range ($RANGE_ARGS)"
+          else
+            RANGE_ARGS="--days $DAYS"
+            echo "Collection window: last $DAYS days"
+          fi
           
           # Use unified gist for all MediaCloud data
           GIST_ID="16c75a94d276d2800a44e3c2437f40e4"
@@ -88,6 +121,8 @@ jobs:
             DOWNLOADED_RAW=0
           fi
           
+          PIPELINE_FAILED=0
+
           for TOPIC in $TOPICS; do
             echo ""
             echo "========================================"
@@ -108,7 +143,20 @@ jobs:
             rm -f "$CLEAN_DIR/articles-${TOPIC}.jsonl"
             
             # Run pipeline with --nofilter to just collect raw data (no relevance filtering)
-            python3 mediacloud/run-pipeline.py --topic "$TOPIC" --auto --days 2 --nofilter || echo "Pipeline for $TOPIC exited with code $?"
+            #
+            # A failure here used to be swallowed by `|| echo ...`, so the run
+            # went green regardless and nobody could tell collection had broken.
+            # Instead: record the failure, still upload whatever WAS collected
+            # (partial data is better than none, and the shrink guard protects
+            # the archive), then fail the run at the end so it is visible.
+            set +e
+            python3 mediacloud/run-pipeline.py --topic "$TOPIC" --auto $RANGE_ARGS --nofilter
+            RC=$?
+            set -e
+            if [ "$RC" -ne 0 ]; then
+              echo "::warning::pipeline for $TOPIC exited with code $RC"
+              PIPELINE_FAILED=1
+            fi
             
             # After pipeline, topic's _combined.jsonl has new records merged
             # Copy back to shared file for next topic
@@ -136,6 +184,13 @@ jobs:
           
           echo ""
           echo "=== All topics completed ==="
+
+          # Whatever was collected is now safely uploaded. Surface the failure.
+          if [ "$PIPELINE_FAILED" -ne 0 ]; then
+            echo "One or more topics failed to collect - failing the run so it"
+            echo "is visible instead of reporting a false green."
+            exit 1
+          fi
 
       - name: Summary
         if: always()
