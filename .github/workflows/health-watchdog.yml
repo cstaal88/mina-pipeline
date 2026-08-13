@@ -18,6 +18,11 @@ on:
     # Every 2 hours, offset off the hour to avoid GitHub's peak-of-hour queue.
     - cron: '7 */2 * * *'
   workflow_dispatch:
+    inputs:
+      drill:
+        description: 'Fire drill: force a failure to prove alerting works (opens a clearly-marked test issue, auto-closes on the next healthy run)'
+        type: boolean
+        default: false
 
 concurrency:
   group: health-watchdog
@@ -50,7 +55,23 @@ jobs:
         run: |
           set +e
           python3 getnews/health.py > health-report.txt 2>&1
-          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          CODE=$?
+
+          # Fire drill: force the alert path so it is exercised on purpose,
+          # rather than first running for real during an actual outage. Only
+          # reachable from a manual dispatch -- scheduled runs have no inputs,
+          # so this is always false on a cron trigger.
+          if [ "${{ inputs.drill }}" = "true" ]; then
+            {
+              echo ""
+              echo "*** FIRE DRILL ***"
+              echo "This failure was forced deliberately to test that alerting works."
+              echo "The pipeline itself is fine -- see the real verdict above."
+            } >> health-report.txt
+            CODE=1
+          fi
+
+          echo "exit_code=$CODE" >> "$GITHUB_OUTPUT"
           cat health-report.txt
 
       - name: Open alert issue
@@ -90,10 +111,13 @@ jobs:
             echo "_Raised by [this run](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})._"
           } > body.md
 
-          gh issue create \
-            --title "🔴 MINA pipeline health check failing" \
-            --label "$LABEL" \
-            --body-file body.md
+          if [ "${{ inputs.drill }}" = "true" ]; then
+            TITLE="🧪 FIRE DRILL — alerting test, no action needed"
+          else
+            TITLE="🔴 MINA pipeline health check failing"
+          fi
+
+          gh issue create --title "$TITLE" --label "$LABEL" --body-file body.md
 
       - name: Close alert issue on recovery
         if: steps.health.outputs.exit_code == '0'
