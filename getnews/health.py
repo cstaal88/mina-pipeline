@@ -13,6 +13,7 @@ is the archive intact, is new data still arriving, did the last run work, is the
 study corpus fresh. Read the VERDICT line; read the rest only if it complains.
 """
 
+import collections
 import hashlib
 import json
 import os
@@ -46,6 +47,24 @@ MCLOUD_WORKFLOW = "mcloud-pipeline.yml"
 # stops silently. Watch it here until that pipeline is sharded too.
 MEDIACLOUD_ARCHIVE = "mediacloud_raw.jsonl"
 BYTES_PER_RECORD = 928  # measured: 22,381,313 bytes / 24,116 records
+
+# Under-collection detection. On 2026-08-01 and 2026-08-06 MediaCloud collected 3
+# records against a ~140/day median -- the fetch ran while those days were still
+# unindexed, the window moved on, and nobody noticed for two weeks. A day with 3
+# records is not an empty day, so the gaps check sails straight past it.
+#
+# Only MediaCloud is checked, deliberately:
+#   - it is where the failure mode lives (indexing lag vs a fixed fetch window)
+#   - a missed MC day is FIXABLE -- MediaCloud is a historical index, so it can be
+#     re-fetched. Alerting on something actionable is the whole point.
+#   - RSS under-collection is already implied by the freshness check, and cannot
+#     be repaired anyway, so an alarm would only nag.
+COVERAGE_LOOKBACK_DAYS = 21
+COVERAGE_FLOOR = 0.25   # fraction of the trailing median that counts as collected
+# A day can still be topped up while it sits inside the pipeline's --days 4
+# window, so only days older than this are final enough to judge.
+MC_SETTLE_DAYS = 5
+MC_MIN_SAMPLE = 7       # need this many settled days before a median means anything
 
 # Runs are triggered every 30 minutes. Allow a couple of missed slots before
 # calling it stale -- a single hiccup is noise, an hour of silence is not.
@@ -272,6 +291,55 @@ def check_mediacloud(files: dict[str, int]) -> Check:
     return Check("MediaCloud archive", OK, detail)
 
 
+def check_mc_volume(mc_records: list[dict], topic: str = "midterms") -> Check:
+    """
+    Days MediaCloud collected far below its own norm -- silent under-collection.
+
+    Compares each settled day against the trailing median rather than a fixed
+    number, so weekends (which legitimately run at ~45% of a weekday) stay quiet
+    while a day at 2% does not. Days still inside the top-up window are skipped:
+    they may yet fill in, and flagging them would cry wolf every morning.
+    """
+    counts = collections.Counter()
+    for r in mc_records:
+        if topic and r.get("my_topic") != topic:
+            continue
+        day = (r.get("publish_date") or "")[:10]
+        if day:
+            counts[day] += 1
+
+    today = datetime.now(timezone.utc).date()
+    window = [
+        (today - timedelta(days=n)).isoformat()
+        for n in range(MC_SETTLE_DAYS, COVERAGE_LOOKBACK_DAYS + 1)
+    ]
+    settled = [(d, counts.get(d, 0)) for d in window]
+    if len(settled) < MC_MIN_SAMPLE:
+        return Check("MediaCloud volume", OK, "not enough settled days to judge yet")
+
+    values = sorted(n for _, n in settled)
+    median = values[len(values) // 2]
+    if median == 0:
+        return Check("MediaCloud volume", FAIL,
+                     "no MediaCloud records at all in the trailing window",
+                     "Collection has stopped entirely. Check the MediaCloud runs.")
+
+    floor = max(1, int(median * COVERAGE_FLOOR))
+    low = [(d, n) for d, n in settled if n < floor]
+
+    detail = (f"median {median}/day over {len(settled)} settled days "
+              f"(flag below {floor})")
+    if not low:
+        return Check("MediaCloud volume", OK, detail)
+
+    worst = ", ".join(f"{d} ({n})" for d, n in sorted(low)[:5])
+    return Check("MediaCloud volume", FAIL,
+                 f"{len(low)} under-collected day(s) — {detail}",
+                 f"Days: {worst}. These are past the top-up window but MediaCloud "
+                 f"is a historical index, so re-fetch them:  gh workflow run "
+                 f"mcloud-pipeline.yml -f since=DATE -f until=DATE")
+
+
 def check_runs(workflow: str = WORKFLOW, label: str = "Workflow runs",
                fail_after: int = CONSECUTIVE_FAILURES_FAIL) -> Check:
     """Did the pipeline actually run, and did it work?"""
@@ -375,6 +443,14 @@ def main() -> int:
     # Daily cadence, so two failures in a row already means two days of no
     # backfill -- a lower bar than the 30-minute RSS pipeline warrants.
     checks.append(check_runs(MCLOUD_WORKFLOW, "MediaCloud runs", fail_after=2))
+
+    if MEDIACLOUD_ARCHIVE in files:
+        # Costs a ~22 MB download. Worth it: this is the only check that sees
+        # a day collected at 2% of normal, which is invisible to every other one.
+        try:
+            checks.append(check_mc_volume(records(gist_text(MEDIACLOUD_ARCHIVE))))
+        except Exception as e:
+            checks.append(Check("MediaCloud volume", WARN, f"could not check ({e})"))
 
     width = max(len(c.name) for c in checks)
     for c in checks:
