@@ -89,6 +89,40 @@ USER_AGENT = (
 #   • loose pre-pass: any keyword match anywhere in title/summary
 #   • clean-{topic}.jsonl: keyword in title, OR 2+ times in summary
 
+# ── KEYWORD MATCHING GUARDS ──────────────────────────────────────────────────
+# Keywords are matched at a word boundary with suffixes allowed, so "tariff"
+# still finds "tariffs" and "democrat" still finds "Democratic", but a keyword
+# can no longer match inside an unrelated longer word.
+#
+# The entries below are the cases where that is not enough -- a keyword appears
+# as a genuine word, but in an unrelated sense. Every one is here because it was
+# measured against the real archive (Aug 2026), not imagined:
+#
+#   house   -> 296 records matched only via "White House"; also housing/household
+#   poll    -> "pollution", "pollen"  (an air-quality story and a tennis story)
+#   primary -> "primary care doctors", "primary school"
+#   gun     -> "begun", "gunman", "gunfire"
+#   border  -> "borderline"
+#   jobs    -> "Steve Jobs"
+#   economy -> "economy class"        (an airline food ranking)
+#   crime   -> "true crime"
+#
+#   exact:       match the bare word only, no suffixes
+#   not_after:   preceding word that voids the match
+#   not_before:  following word that voids the match
+#   not_suffix:  suffixes that make it a different word
+
+KEYWORD_GUARDS = {
+    "house":   {"exact": True, "not_after": ["white"]},
+    "poll":    {"not_suffix": ["ution", "en"]},
+    "primary": {"not_before": ["care", "school"]},
+    "jobs":    {"not_after": ["steve"]},
+    "gun":     {"not_suffix": ["man", "men", "fire", "shot", "ned"]},
+    "border":  {"not_suffix": ["line"]},
+    "economy": {"not_before": ["class"]},
+    "crime":   {"not_after": ["true"]},
+}
+
 TOPICS = {
     "minneapolis-ice": {
         "keywords": [
@@ -160,6 +194,7 @@ TOPICS = {
             "midterm", "midterms", "election", "elections", "campaign",
             "candidate", "ballot", "voters", "primary",
             "senate race", "house race",
+            "reelection", "re-election",  # see the broad tier's note
         ],
         "exclude_terms": [
             "hall of fame", "conclave", "papal", "pope",
@@ -180,6 +215,10 @@ TOPICS = {
             "election", "elections", "campaign", "candidate", "primary",
             "ballot", "voters", "turnout", "senate", "house", "congress",
             "congressional", "poll", "polls", "democrat", "republican",
+            # Explicit because word-boundary matching no longer reaches it as a
+            # substring of "reelection". Worth 23 real records; the same change
+            # stops "selection" (jury selection, Selection Sunday) getting in.
+            "reelection", "re-election",
             "immigration", "economy", "inflation", "abortion", "border",
             "tariff", "healthcare",
         ],

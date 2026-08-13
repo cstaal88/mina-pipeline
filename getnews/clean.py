@@ -43,6 +43,7 @@ from config import (
     SHARD_PATTERN,
     SHARD_SIZE_WARN,
     SHARD_SIZE_ABORT,
+    KEYWORD_GUARDS,
 )
 
 # raw.jsonl passed 17 MB in mid-2026 and grows daily. The old 30s read timeout
@@ -82,6 +83,40 @@ def domain_from_url(url: str) -> str:
     return netloc.replace('www.', '') if netloc else ""
 
 
+_KEYWORD_RE: dict[str, re.Pattern] = {}
+
+
+def keyword_pattern(keyword: str) -> re.Pattern:
+    """
+    Compiled matcher for one keyword, anchored at a word start.
+
+    Plain substring matching used to let a keyword match inside an unrelated
+    word: "house" hit every "White House" story (296 of them), "poll" hit
+    "pollution", "gun" hit "begun". Anchoring at a word start with suffixes
+    still allowed keeps the useful inflections ("tariff" -> "tariffs",
+    "democrat" -> "Democratic") while dropping those.
+
+    Keywords needing more than that carry an entry in KEYWORD_GUARDS, each one
+    measured against the real archive rather than guessed at.
+    """
+    if keyword in _KEYWORD_RE:
+        return _KEYWORD_RE[keyword]
+
+    guard = KEYWORD_GUARDS.get(keyword, {})
+    tail = r"(?!\w)" if guard.get("exact") else r"\w*"
+    if guard.get("not_suffix"):
+        tail = "(?!" + "|".join(guard["not_suffix"]) + ")" + tail
+
+    pattern = r"(?<!\w)" + re.escape(keyword) + tail
+    if guard.get("not_after"):
+        pattern = r"(?<!\b(?:" + "|".join(guard["not_after"]) + r")\s)" + pattern
+    if guard.get("not_before"):
+        pattern += r"(?!\s+(?:" + "|".join(guard["not_before"]) + r")\b)"
+
+    _KEYWORD_RE[keyword] = re.compile(pattern)
+    return _KEYWORD_RE[keyword]
+
+
 def matches_keywords(story: dict, keywords: list[str]) -> bool:
     """Check if story title or summary contains any keyword (loose match)."""
     title = (story.get("title") or "").lower()
@@ -89,7 +124,7 @@ def matches_keywords(story: dict, keywords: list[str]) -> bool:
     text = f"{title} {summary}"
 
     for kw in keywords:
-        if kw.lower() in text:
+        if keyword_pattern(kw.lower()).search(text):
             return True
     return False
 
@@ -104,10 +139,10 @@ def matches_strict_keywords(story: dict, keywords: list[str]) -> bool:
     summary = (story.get("summary") or story.get("description") or "").lower()
 
     for kw in keywords:
-        kw_lower = kw.lower()
-        if kw_lower in title:
+        pattern = keyword_pattern(kw.lower())
+        if pattern.search(title):
             return True
-        if summary.count(kw_lower) >= 2:
+        if len(pattern.findall(summary)) >= 2:
             return True
     return False
 
@@ -119,7 +154,9 @@ def has_excluded_terms(story: dict, exclude_terms: list[str]) -> bool:
     title = (story.get("title") or "").lower()
     summary = (story.get("summary") or story.get("description") or "").lower()
     text = f"{title} {summary}"
-    return any(term in text for term in exclude_terms)
+    # Word-anchored for the same reason as keywords: "papal" was excluding a
+    # story about a rally called "Trumpapalooza".
+    return any(keyword_pattern(term.lower()).search(text) for term in exclude_terms)
 
 
 def matches_gated_issues(story: dict, topic: dict) -> bool:
@@ -139,7 +176,8 @@ def matches_gated_issues(story: dict, topic: dict) -> bool:
     title = (story.get("title") or "").lower()
     summary = (story.get("summary") or story.get("description") or "").lower()
     text = f"{title} {summary}"
-    return any(i in text for i in issues) and any(c in text for c in context)
+    return (any(keyword_pattern(i.lower()).search(text) for i in issues)
+            and any(keyword_pattern(c.lower()).search(text) for c in context))
 
 
 def is_english(story: dict) -> bool:
