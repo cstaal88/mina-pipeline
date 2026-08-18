@@ -20,6 +20,7 @@ Data Sources:
 
 import hashlib
 import json
+import random
 import re
 import shutil
 import subprocess
@@ -52,10 +53,16 @@ from config import (
 GIST_TIMEOUT = 120
 GIST_UPLOAD_TIMEOUT = 120
 
-# GitHub's API throws transient 502s a few times a day, usually on the large
-# raw.jsonl PATCH. Same-content re-uploads are idempotent, so retrying is safe.
-GIST_UPLOAD_ATTEMPTS = 3
-GIST_RETRY_DELAY = 5  # seconds; doubles per attempt (5s, then 10s)
+# GitHub's API throws transient errors a few times a day: 502/503 on the large
+# raw.jsonl PATCH, and 429 on the raw-content reads. Both clear within seconds.
+# Reads have no side effects and same-content re-uploads are idempotent, so
+# every gist call is safe to retry -- see gist_run.
+#
+# Deliberately a short budget. A long outage is not worth grinding through here:
+# the pipeline runs every 30 minutes and the next run re-fetches whatever this
+# one missed, so cron is the real retry. These attempts only cover the blips.
+GIST_ATTEMPTS = 4
+GIST_RETRY_DELAY = 5  # seconds; doubles per attempt (5s, 10s, 20s) plus jitter
 
 
 def generate_id(url: str) -> str:
@@ -307,18 +314,64 @@ class GistError(RuntimeError):
     """
 
 
+def gist_run(
+    args: list[str],
+    what: str,
+    timeout: int = GIST_TIMEOUT,
+    retry_if=None,
+) -> subprocess.CompletedProcess:
+    """
+    Run a `gh gist` command, retrying transient API failures.
+
+    Returns the CompletedProcess: a success, or the last failure once the
+    attempts are spent. It does not decide what a failure means -- only the
+    caller knows whether a non-zero exit is "absent" or "broken", and that
+    distinction is what keeps an unreadable archive from being mistaken for an
+    empty one (see GistError).
+
+    Raises GistError without retrying if the subprocess could not be run at
+    all. A timeout is already GIST_TIMEOUT seconds of waiting; spending
+    GIST_ATTEMPTS times that would outlast the 30-minute run interval.
+
+    `retry_if` receives the failed CompletedProcess and returns whether another
+    attempt is worthwhile; by default every failure is retried.
+    """
+    result = None
+    for attempt in range(1, GIST_ATTEMPTS + 1):
+        try:
+            result = subprocess.run(
+                args, capture_output=True, text=True, timeout=timeout
+            )
+        except subprocess.TimeoutExpired as e:
+            raise GistError(f"timed out after {timeout}s {what}") from e
+        except Exception as e:
+            raise GistError(f"error {what}: {e}") from e
+
+        if result.returncode == 0:
+            return result
+        if retry_if is not None and not retry_if(result):
+            return result
+        if attempt == GIST_ATTEMPTS:
+            return result
+
+        # Jitter keeps a run's four uploads from retrying in lockstep and
+        # re-colliding with whatever rate limit knocked them back.
+        delay = GIST_RETRY_DELAY * 2 ** (attempt - 1)
+        delay += random.uniform(0, delay / 2)
+        print(
+            f"  {what} failed ({result.stderr.strip()}) - "
+            f"retrying in {delay:.0f}s (attempt {attempt}/{GIST_ATTEMPTS})"
+        )
+        time.sleep(delay)
+
+    return result
+
+
 def gist_list_files() -> set[str]:
     """Filenames currently in the unified gist. Raises GistError if unknowable."""
-    try:
-        result = subprocess.run(
-            ["gh", "gist", "view", GIST_ID, "--files"],
-            capture_output=True,
-            text=True,
-            timeout=GIST_TIMEOUT,
-        )
-    except Exception as e:
-        raise GistError(f"could not list gist files: {e}") from e
-
+    result = gist_run(
+        ["gh", "gist", "view", GIST_ID, "--files"], "listing gist files"
+    )
     if result.returncode != 0:
         raise GistError(f"could not list gist files: {result.stderr.strip()}")
 
@@ -361,19 +414,14 @@ def gist_download(filename: str) -> str | None:
     file. Raises GistError on any other failure (timeout, rate limit, auth),
     because callers use None to mean "start fresh" -- see GistError.
     """
-    try:
-        result = subprocess.run(
-            ["gh", "gist", "view", GIST_ID, "-f", filename],
-            capture_output=True,
-            text=True,
-            timeout=GIST_TIMEOUT,
-        )
-    except subprocess.TimeoutExpired as e:
-        raise GistError(
-            f"timed out after {GIST_TIMEOUT}s downloading {filename}"
-        ) from e
-    except Exception as e:
-        raise GistError(f"error downloading {filename}: {e}") from e
+    # Retries come before the existence check, not after: the failure worth
+    # optimising for is a transient 429 on a file that does exist, and that
+    # resolves without spending an extra API call. A genuinely absent file
+    # pays the full retry budget first, which is fine -- every caller but the
+    # MediaCloud merge reads from gist_list_files(), so absence is rare.
+    result = gist_run(
+        ["gh", "gist", "view", GIST_ID, "-f", filename], f"downloading {filename}"
+    )
 
     if result.returncode == 0:
         return result.stdout
@@ -398,7 +446,7 @@ def gist_upload(filename: str, filepath: Path) -> bool:
     under the right name when they differ.
 
     Both calls are retried, since transient API errors clear within seconds --
-    see GIST_UPLOAD_ATTEMPTS.
+    see GIST_ATTEMPTS.
     """
     if filename == LEGACY_ARCHIVE:
         # Belt and braces. The frozen archive is already past the API's write
@@ -410,54 +458,43 @@ def gist_upload(filename: str, filepath: Path) -> bool:
             f"read-only. New records belong in {current_shard_name()}."
         )
 
+    # `edit -f` only selects an existing file, so "not there yet" is a permanent
+    # failure, not a transient one: stop retrying and fall through to --add.
+    # The answer is cached because the check costs an API call, and a retry
+    # storm is exactly when spending extra calls is worst.
+    missing = False
+
+    def worth_retrying(_result: subprocess.CompletedProcess) -> bool:
+        nonlocal missing
+        missing = filename not in gist_list_files()
+        return not missing
+
     try:
-        for attempt in range(1, GIST_UPLOAD_ATTEMPTS + 1):
-            result = subprocess.run(
-                ["gh", "gist", "edit", GIST_ID, "-f", filename, str(filepath)],
-                capture_output=True,
-                text=True,
-                timeout=GIST_UPLOAD_TIMEOUT,
-            )
-            if result.returncode == 0:
-                return True
-
-            if filename not in gist_list_files():
-                break  # edit can't create a file; fall through to --add
-
-            if attempt == GIST_UPLOAD_ATTEMPTS:
-                print(f"  Warning: gist edit failed: {result.stderr.strip()}")
-                return False
-
-            delay = GIST_RETRY_DELAY * 2 ** (attempt - 1)
-            print(
-                f"  gist edit failed ({result.stderr.strip()}) - "
-                f"retrying in {delay}s (attempt {attempt}/{GIST_UPLOAD_ATTEMPTS})"
-            )
-            time.sleep(delay)
+        edit = gist_run(
+            ["gh", "gist", "edit", GIST_ID, "-f", filename, str(filepath)],
+            f"gist edit {filename}",
+            timeout=GIST_UPLOAD_TIMEOUT,
+            retry_if=worth_retrying,
+        )
+        if edit.returncode == 0:
+            return True
+        if not missing:
+            print(f"  Warning: gist edit failed: {edit.stderr.strip()}")
+            return False
 
         print(f"  {filename} not in gist yet - adding it")
         with tempfile.TemporaryDirectory() as tmpdir:
             staged = Path(tmpdir) / filename
             shutil.copyfile(filepath, staged)
-            for attempt in range(1, GIST_UPLOAD_ATTEMPTS + 1):
-                add_result = subprocess.run(
-                    ["gh", "gist", "edit", GIST_ID, "--add", str(staged)],
-                    capture_output=True,
-                    text=True,
-                    timeout=GIST_UPLOAD_TIMEOUT,
-                )
-                if add_result.returncode == 0:
-                    return True
-                if attempt == GIST_UPLOAD_ATTEMPTS:
-                    break
-                delay = GIST_RETRY_DELAY * 2 ** (attempt - 1)
-                print(
-                    f"  gist add failed ({add_result.stderr.strip()}) - "
-                    f"retrying in {delay}s (attempt {attempt}/{GIST_UPLOAD_ATTEMPTS})"
-                )
-                time.sleep(delay)
-        print(f"  Warning: gist add failed: {add_result.stderr.strip()}")
-        return False
+            add = gist_run(
+                ["gh", "gist", "edit", GIST_ID, "--add", str(staged)],
+                f"gist add {filename}",
+                timeout=GIST_UPLOAD_TIMEOUT,
+            )
+            if add.returncode == 0:
+                return True
+            print(f"  Warning: gist add failed: {add.stderr.strip()}")
+            return False
     except GistError:
         raise
     except Exception as e:
@@ -731,16 +768,24 @@ def main() -> int:
 
         if gist_upload(shard_name, local_shard):
             print(f"  ✓ {shard_name}")
+
+            for filename, filepath in clean_files.items():
+                if gist_upload(filename, filepath):
+                    print(f"  ✓ {filename}")
+                else:
+                    print(f"  ✗ {filename} (failed)")
+                    upload_failed = True
         else:
             print(f"  ✗ {shard_name} (failed)")
+            # The clean files were derived from an archive state the gist does
+            # not have, so publishing them would leave readers with stories no
+            # raw shard accounts for. Skip them: nothing is lost, because every
+            # clean file is rebuilt from the whole archive on the next run.
+            print(
+                f"  - skipped {len(clean_files)} clean file(s): "
+                f"they would be ahead of the archive"
+            )
             upload_failed = True
-
-        for filename, filepath in clean_files.items():
-            if gist_upload(filename, filepath):
-                print(f"  ✓ {filename}")
-            else:
-                print(f"  ✗ {filename} (failed)")
-                upload_failed = True
 
         print(f"\nGist: https://gist.github.com/{GIST_ID}")
 
