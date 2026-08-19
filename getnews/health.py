@@ -17,9 +17,11 @@ import collections
 import hashlib
 import json
 import os
+import random
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -39,6 +41,19 @@ from config import (  # noqa: E402
 
 WORKFLOW = "rss-pipeline.yml"
 MCLOUD_WORKFLOW = "mcloud-pipeline.yml"
+
+# GitHub throws transient errors several times a day -- 429 on the raw-content
+# reads, 502/503 on the API, and plain TCP resets. On 2026-08-19 one reset
+# mid-check crashed this script and opened a "pipeline health check failing"
+# issue while the pipeline was fine: 28 of 28 RSS runs were green either side of
+# it. A watchdog more fragile than the thing it watches trains you to ignore it,
+# so every read is retried.
+#
+# Deliberately NOT shared with clean.py's identical gist_run. This script has to
+# work when the pipeline module is broken -- which is precisely when it matters
+# -- so it must not import from it.
+GH_ATTEMPTS = 4
+GH_RETRY_DELAY = 5  # seconds; doubles per attempt (5s, 10s, 20s) plus jitter
 
 # mediacloud_raw.jsonl is still a single monolithic file written by
 # mcloud-pipeline.yml, which has a shrink guard but NO size guard. It is the
@@ -95,15 +110,42 @@ def gh(args: list[str], timeout: int = 120) -> str:
     keyring, and this machine exports a long-expired PAT under that name which
     shadows the working credential. GH_TOKEN (what GitHub Actions sets) is left
     alone, so this is correct both locally and on a runner.
+
+    Transient failures are retried -- see GH_ATTEMPTS. Every call this script
+    makes is a read, so a retry can never damage anything.
     """
     env = dict(os.environ)
     env.pop("GITHUB_TOKEN", None)
-    result = subprocess.run(
-        ["gh", *args], capture_output=True, text=True, timeout=timeout, env=env
-    )
-    if result.returncode != 0:
-        raise RuntimeError(result.stderr.strip() or "gh failed")
-    return result.stdout
+
+    for attempt in range(1, GH_ATTEMPTS + 1):
+        try:
+            result = subprocess.run(
+                ["gh", *args], capture_output=True, text=True, timeout=timeout,
+                env=env,
+            )
+        except subprocess.TimeoutExpired:
+            # Already `timeout` seconds spent. A hung read is not the momentary
+            # blip this guards against, and retrying it would push a routine
+            # check into minutes of dead waiting.
+            raise RuntimeError(f"timed out after {timeout}s: gh {' '.join(args)}")
+
+        if result.returncode == 0:
+            return result.stdout
+
+        err = result.stderr.strip() or "gh failed"
+        if attempt == GH_ATTEMPTS:
+            raise RuntimeError(err)
+
+        # Jitter so the several reads in one check do not resynchronise onto
+        # whatever rate limit knocked them back.
+        delay = GH_RETRY_DELAY * 2 ** (attempt - 1)
+        delay += random.uniform(0, delay / 2)
+        print(
+            f"  (transient: {err.splitlines()[0][:120]} — "
+            f"retrying in {delay:.0f}s, attempt {attempt}/{GH_ATTEMPTS})",
+            file=sys.stderr,
+        )
+        time.sleep(delay)
 
 
 def gist_files() -> dict[str, int]:
