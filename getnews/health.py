@@ -437,7 +437,20 @@ def check_corpus(files: dict[str, int]) -> Check:
             worst = FAIL
             notes.append(f"{name} is missing from the gist")
             continue
-        meta = meta_line(gist_text(name))
+        try:
+            meta = meta_line(gist_text(name))
+        except RuntimeError as e:
+            # Unreadable is not the same as broken. This check reports corpus
+            # counts; failing to fetch one says nothing about whether collection
+            # is still running -- "Last write" and "Workflow runs" answer that,
+            # and the latter reads the Actions API, so it survives a gist
+            # outage. WARN (exit 0, no issue) so a transient read cannot page
+            # anyone, matching what check_runs and check_mc_volume already do.
+            # A genuinely stalled pipeline is still caught, by those checks.
+            worst = WARN if worst == OK else worst
+            notes.append(f"{name} could not be read ({str(e).splitlines()[0][:80]})")
+            parts.append(f"{topic.replace('midterms-', '')} ?")
+            continue
         count = meta.get("record_count", "?")
         parts.append(f"{topic.replace('midterms-', '')} {count:,}"
                      if isinstance(count, int) else f"{topic} ?")
