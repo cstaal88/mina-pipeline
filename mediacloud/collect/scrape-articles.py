@@ -23,7 +23,7 @@ from typing import Any, Iterable, Optional
 
 import requests
 from bs4 import BeautifulSoup
-from tenacity import Retrying, retry_if_exception_type, stop_after_attempt, wait_exponential
+from tenacity import Retrying, retry_if_exception, stop_after_attempt, wait_exponential
 
 # Import config from parent directory
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -40,8 +40,24 @@ DEFAULT_UA = (
 )
 
 
+# A 4xx means the server understood the request and refused it: a paywall, a
+# bot block, a dead link. No number of retries changes that answer. 408 and 429
+# are the exceptions -- both explicitly mean "try again" -- and 5xx always is.
+RETRYABLE_STATUSES = frozenset({408, 429})
+
+
 class FetchError(RuntimeError):
     pass
+
+
+class PermanentFetchError(FetchError):
+    """A refusal no number of retries will change."""
+
+
+def _is_retryable(exc: BaseException) -> bool:
+    if isinstance(exc, PermanentFetchError):
+        return False
+    return isinstance(exc, (requests.RequestException, FetchError))
 
 
 def _now_iso() -> str:
@@ -175,6 +191,7 @@ def extract_title_from_html(html: str) -> Optional[str]:
 @dataclass(frozen=True)
 class FetchConfig:
     timeout: float
+    connect_timeout: float
     retries: int
     backoff_max: float
     user_agent: str
@@ -188,9 +205,21 @@ def fetch_html(url: str, *, cfg: FetchConfig) -> tuple[str, str, int]:
     }
 
     def _do_get() -> tuple[str, str, int]:
-        resp = requests.get(url, headers=headers, timeout=cfg.timeout, allow_redirects=True)
+        # Separate connect and read budgets. The dominant failure on a hosted
+        # runner is a news site null-routing the whole datacenter IP range,
+        # which hangs the TCP handshake rather than refusing it. Only a connect
+        # budget bounds that, and a handshake unfinished after a few seconds is
+        # never going to finish.
+        resp = requests.get(
+            url,
+            headers=headers,
+            timeout=(cfg.connect_timeout, cfg.timeout),
+            allow_redirects=True,
+        )
         status = int(resp.status_code)
         if status >= 400:
+            if status < 500 and status not in RETRYABLE_STATUSES:
+                raise PermanentFetchError(f"HTTP {status}")
             raise FetchError(f"HTTP {status}")
         resp.encoding = resp.encoding or resp.apparent_encoding
         return resp.text, resp.url, status
@@ -199,7 +228,7 @@ def fetch_html(url: str, *, cfg: FetchConfig) -> tuple[str, str, int]:
         reraise=True,
         stop=stop_after_attempt(max(1, int(cfg.retries))),
         wait=wait_exponential(multiplier=1, min=1, max=float(cfg.backoff_max)),
-        retry=retry_if_exception_type((requests.RequestException, FetchError)),
+        retry=retry_if_exception(_is_retryable),
     ):
         with attempt:
             return _do_get()
@@ -268,11 +297,13 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     p.add_argument("--date", type=str, default=None,
                    help="Specific date to process (YYYY-MM-DD). Default: all dates.")
     p.add_argument("--trial3", action="store_true", help="Sample 3 random URLs and print descriptions.")
-    p.add_argument("--workers", "-w", type=int, default=2, help="Parallel workers.")
+    p.add_argument("--workers", "-w", type=int, default=4, help="Parallel workers.")
     p.add_argument("--delay-min", type=float, default=0.3, help="Min delay between requests (seconds).")
     p.add_argument("--delay-max", type=float, default=0.8, help="Max delay between requests (seconds).")
-    p.add_argument("--timeout", type=float, default=20, help="Per-request timeout in seconds.")
-    p.add_argument("--retries", type=int, default=5, help="Max attempts per URL (includes first try).")
+    p.add_argument("--timeout", type=float, default=10, help="Per-request read timeout in seconds.")
+    p.add_argument("--connect-timeout", type=float, default=5,
+                   help="Per-request connect timeout in seconds.")
+    p.add_argument("--retries", type=int, default=2, help="Max attempts per URL (includes first try).")
     p.add_argument("--backoff-max", type=float, default=60, help="Max exponential backoff between retries.")
     p.add_argument("--no-resume", action="store_true", help="Re-fetch all URLs, ignoring already present in output.")
     p.add_argument("--limit", type=int, default=None, help="Only process first N records.")
@@ -394,6 +425,7 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     cfg = FetchConfig(
         timeout=float(args.timeout),
+        connect_timeout=float(args.connect_timeout),
         retries=int(args.retries),
         backoff_max=float(args.backoff_max),
         user_agent=str(args.user_agent),
