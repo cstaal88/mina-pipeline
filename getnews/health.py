@@ -140,8 +140,12 @@ def gh(args: list[str], timeout: int = 120) -> str:
         # whatever rate limit knocked them back.
         delay = GH_RETRY_DELAY * 2 ** (attempt - 1)
         delay += random.uniform(0, delay / 2)
+        # gh puts the URL first and the reason last, so a plain truncation
+        # keeps 120 characters of URL and cuts the diagnosis -- which is the
+        # only part worth logging. Elide the URL, then truncate.
+        reason = re.sub(r"https?://[^\s\"')]+", "<url>", err.splitlines()[0])[:120]
         print(
-            f"  (transient: {err.splitlines()[0][:120]} — "
+            f"  (transient: {reason} — "
             f"retrying in {delay:.0f}s, attempt {attempt}/{GH_ATTEMPTS})",
             file=sys.stderr,
         )
