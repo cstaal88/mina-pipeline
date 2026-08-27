@@ -81,6 +81,13 @@ COVERAGE_FLOOR = 0.25   # fraction of the trailing median that counts as collect
 MC_SETTLE_DAYS = 5
 MC_MIN_SAMPLE = 7       # need this many settled days before a median means anything
 
+# MediaCloud runs once a day, but GitHub's scheduler is best-effort: on
+# 2026-08-27 the 06:17 cron was delivered at 09:25, over three hours late. The
+# OK band has to absorb a delay like that or it cries wolf every slow morning.
+# Past 50 hours two dailies have been missed, which no delay explains.
+MC_FRESH_OK_HOURS = 30
+MC_FRESH_WARN_HOURS = 50
+
 # Runs are triggered every 30 minutes. Allow a couple of missed slots before
 # calling it stale -- a single hiccup is noise, an hour of silence is not.
 FRESH_OK_MINUTES = 90
@@ -337,6 +344,47 @@ def check_mediacloud(files: dict[str, int]) -> Check:
     return Check("MediaCloud archive", OK, detail)
 
 
+def check_mc_freshness(mc_records: list[dict]) -> Check:
+    """
+    Did a MediaCloud collection actually land, or did a day go missing?
+
+    check_runs cannot answer this. It only inspects runs that *completed*, so a
+    scheduled run GitHub never created leaves no failed run to count and the
+    consecutive-failure tally stays at zero. On 2026-08-27 a day went
+    uncollected until 09:25 and every check still read healthy. This is the one
+    that notices, and it asks the archive rather than the Actions API, so it
+    reports what actually arrived rather than what was supposed to.
+    """
+    # Compare parsed ages, not strings: collected_at is naive and scraped_at
+    # carries an offset, so a lexicographic max across the two is not sound.
+    newest = None
+    for field in ("collected_at", "scraped_at"):
+        stamps = [r[field] for r in mc_records if r.get(field)]
+        if not stamps:
+            continue
+        mins = age_minutes(max(stamps))
+        if mins is not None and (newest is None or mins < newest):
+            newest = mins
+
+    if newest is None:
+        return Check("MediaCloud last write", WARN,
+                     "no readable collection timestamp in the archive")
+
+    detail = human_age(newest)
+    hours = newest / 60
+    if hours <= MC_FRESH_OK_HOURS:
+        return Check("MediaCloud last write", OK, detail)
+    if hours <= MC_FRESH_WARN_HOURS:
+        return Check("MediaCloud last write", WARN, detail,
+                     "A daily run looks to have been missed. The 4-day lookback "
+                     "recollects it if the next one lands, so this is only worth "
+                     "chasing if it repeats.")
+    return Check("MediaCloud last write", FAIL, detail,
+                 "Two or more daily collections missed; the lookback window will "
+                 "start dropping days. Trigger one:  "
+                 "gh workflow run mcloud-pipeline.yml")
+
+
 def check_mc_volume(mc_records: list[dict], topic: str = "midterms") -> Check:
     """
     Days MediaCloud collected far below its own norm -- silent under-collection.
@@ -499,17 +547,28 @@ def main() -> int:
     checks.append(check_runs())
     checks.append(check_corpus(files))
     checks.append(check_mediacloud(files))
+
+    # One ~23 MB download feeds both archive checks below. Worth it: between
+    # them they catch a day collected at 2% of normal and a day not collected
+    # at all, and no other check sees either. Ordered to mirror the RSS block
+    # above -- size, last write, runs, volume.
+    mc_records: list[dict] | None = None
+    mc_error = ""
+    if MEDIACLOUD_ARCHIVE in files:
+        try:
+            mc_records = records(gist_text(MEDIACLOUD_ARCHIVE))
+        except Exception as e:
+            mc_error = f"could not check ({e})"
+        checks.append(check_mc_freshness(mc_records) if mc_records is not None
+                      else Check("MediaCloud last write", WARN, mc_error))
+
     # Daily cadence, so two failures in a row already means two days of no
     # backfill -- a lower bar than the 30-minute RSS pipeline warrants.
     checks.append(check_runs(MCLOUD_WORKFLOW, "MediaCloud runs", fail_after=2))
 
     if MEDIACLOUD_ARCHIVE in files:
-        # Costs a ~22 MB download. Worth it: this is the only check that sees
-        # a day collected at 2% of normal, which is invisible to every other one.
-        try:
-            checks.append(check_mc_volume(records(gist_text(MEDIACLOUD_ARCHIVE))))
-        except Exception as e:
-            checks.append(Check("MediaCloud volume", WARN, f"could not check ({e})"))
+        checks.append(check_mc_volume(mc_records) if mc_records is not None
+                      else Check("MediaCloud volume", WARN, mc_error))
 
     width = max(len(c.name) for c in checks)
     for c in checks:
