@@ -58,6 +58,71 @@ jobs:
           cd getnews
           python3 clean.py --push
 
+      # MediaCloud runs on GitHub's own cron, which is best-effort. On
+      # 2026-08-27 the 06:17 job was not delivered until 09:25, and the day
+      # before it was cancelled by its own timeout before uploading, so
+      # 2026-08-26 went uncollected entirely. This pipeline is driven by
+      # cron-job.org and has not missed a slot, which makes it a good backstop.
+      #
+      # The rule is "no run STARTED in the last 20 hours", deliberately not "no
+      # SUCCESSFUL run". Keying on success would re-dispatch a broken
+      # MediaCloud every 30 minutes -- 48 runs a day at ~64 API calls each
+      # would exhaust the 4,000/week MediaCloud quota in under two days, and
+      # leave nothing to recover with. Keying on the last attempt is
+      # self-limiting: dispatching makes the newest run "now", so this cannot
+      # fire again for 20 hours whatever the outcome. At most one extra run a
+      # day. A genuinely broken MediaCloud is health.py's job to report, not
+      # this step's job to retry.
+      - name: Back up the MediaCloud schedule
+        if: always()
+        continue-on-error: true
+        run: |
+          MC_WORKFLOW="mcloud-pipeline.yml"
+          THRESHOLD_HOURS=20
+
+          RUNS=$(gh api \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/${MC_WORKFLOW}/runs?per_page=20" \
+            --jq '.workflow_runs[] | "\(.status)\t\(.created_at)"' 2>/dev/null) || {
+              echo "Could not read MediaCloud run history; leaving the schedule alone."
+              exit 0
+            }
+
+          if [ -z "$RUNS" ]; then
+            echo "No MediaCloud runs found at all; leaving the schedule alone."
+            exit 0
+          fi
+
+          # Never dispatch while one is genuinely active: mcloud-fetch sets
+          # cancel-in-progress, so a second dispatch would kill a ~43-minute
+          # collection already most of the way done. The age cutoff matters --
+          # a run can wedge in "queued" indefinitely (an RSS run did exactly
+          # that on 2026-08-27), and without it one stuck run would disable
+          # this backstop forever. MediaCloud's own timeout is 90 minutes, so
+          # nothing legitimate is still running after three hours.
+          CUTOFF=$(date -u -d '3 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+          ACTIVE=$(echo "$RUNS" | awk -F'\t' -v c="$CUTOFF" \
+                   '$1 != "completed" && ($2 "") > (c "")' | head -1)
+          if [ -n "$ACTIVE" ]; then
+            echo "A MediaCloud run is active ($ACTIVE); nothing to do."
+            exit 0
+          fi
+
+          NEWEST=$(echo "$RUNS" | cut -f2 | sort -r | head -1)
+          AGE_H=$(( ( $(date -u +%s) - $(date -u -d "$NEWEST" +%s) ) / 3600 ))
+          echo "Newest MediaCloud run: $NEWEST (${AGE_H}h ago, threshold ${THRESHOLD_HOURS}h)"
+
+          if [ "$AGE_H" -lt "$THRESHOLD_HOURS" ]; then
+            echo "Recent enough; nothing to do."
+            exit 0
+          fi
+
+          echo "::warning::No MediaCloud run in ${AGE_H}h - GitHub's schedule looks to have been missed. Dispatching one."
+          if gh workflow run "$MC_WORKFLOW" --ref "${GITHUB_REF_NAME}"; then
+            echo "Dispatched."
+          else
+            echo "::warning::Dispatch failed. GIST_PAT likely lacks permission to dispatch workflows (classic PAT: public_repo; fine-grained: Actions read+write)."
+          fi
+
       - name: Summary
         if: always()
         run: |
