@@ -32,19 +32,39 @@ def main():
         print(f"Error fetching quota: {e}")
         sys.exit(1)
 
-    quota = profile.get('quota', {})
-    hits = quota.get('hits', 0)
-    limit = quota.get('limit', 0)
-    week = quota.get('week', 'unknown')
-    remaining = limit - hits
-    pct_used = (hits / limit * 100) if limit > 0 else 0
+    # The API started returning null for quota fields: the 2026-08-29 and
+    # 2026-08-30 runs both died here on `None - int`. dict.get(key, default)
+    # only supplies the default when the key is ABSENT, not when it is present
+    # and null, so every field has to be coerced explicitly.
+    quota = profile.get('quota') or {}
+    hits = quota.get('hits')
+    limit = quota.get('limit')
+    week = quota.get('week') or 'unknown'
+
+    def fmt(n):
+        return f"{n:,}" if isinstance(n, (int, float)) else "unknown"
 
     print("=" * 50)
     print("MEDIACLOUD API QUOTA")
     print("=" * 50)
     print(f"Week of:    {week}")
-    print(f"Used:       {hits:,}")
-    print(f"Limit:      {limit:,}")
+    print(f"Used:       {fmt(hits)}")
+    print(f"Limit:      {fmt(limit)}")
+
+    usable = (isinstance(hits, (int, float))
+              and isinstance(limit, (int, float)) and limit > 0)
+    if not usable:
+        # Report the gap rather than inventing a number. This step only tells
+        # you how much headroom is left; a wrong figure is worse than none, and
+        # collection is entirely unaffected either way.
+        print("Remaining:  unknown")
+        print("=" * 50)
+        print("Note: the API returned no usable quota figure. Collection is "
+              "unaffected — this step only reports headroom.")
+        return
+
+    remaining = limit - hits
+    pct_used = hits / limit * 100
     print(f"Remaining:  {remaining:,} ({100 - pct_used:.1f}%)")
     print("=" * 50)
 

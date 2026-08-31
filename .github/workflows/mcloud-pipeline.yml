@@ -200,8 +200,15 @@ jobs:
           echo "Date: $(date -u +%Y-%m-%d' '%H:%M' UTC')"
           echo "================================================"
 
+      # Informational only. On 2026-08-29 and 2026-08-30 this step crashed on a
+      # null quota field and marked two fully successful collections as failed
+      # -- fetch, scrape, merge and upload had all completed -- which opened a
+      # health issue and paged for two days over a report, not a problem. A step
+      # that only tells you how much headroom is left must never be able to fail
+      # a collection run.
       - name: Check API quota
         if: always()
+        continue-on-error: true
         env:
           MEDIACLOUD_API_KEY: ${{ secrets.MEDIACLOUD_API_KEY }}
         run: python3 mediacloud/quota.py
