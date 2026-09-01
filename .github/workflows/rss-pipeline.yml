@@ -19,6 +19,19 @@ name: "RSS News Pipeline"
 
 on:
   workflow_dispatch:
+    inputs:
+      test_mcloud_backstop:
+        description: 'Dispatch one MediaCloud run to verify the backstop'
+        required: false
+        type: boolean
+        default: false
+
+# The built-in token is used only by the MediaCloud backstop. GitHub permits
+# GITHUB_TOKEN-authenticated workflow_dispatch events, so the long-lived PAT
+# used for Gist writes does not need repository or Actions write access.
+permissions:
+  contents: read
+  actions: write
 
 concurrency:
   group: rss-fetch
@@ -64,21 +77,29 @@ jobs:
       # 2026-08-26 went uncollected entirely. This pipeline is driven by
       # cron-job.org and has not missed a slot, which makes it a good backstop.
       #
-      # The rule is "no run STARTED in the last 20 hours", deliberately not "no
-      # SUCCESSFUL run". Keying on success would re-dispatch a broken
+      # The rule is "no run STARTED in the last 30 hours", deliberately not "no
+      # SUCCESSFUL run". Thirty hours absorbs the 3h08 scheduler delay observed
+      # on 2026-08-27 without firing before a normal 24-hour schedule. Keying on
+      # success would re-dispatch a broken
       # MediaCloud every 30 minutes -- 48 runs a day at ~64 API calls each
       # would exhaust the 4,000/week MediaCloud quota in under two days, and
       # leave nothing to recover with. Keying on the last attempt is
-      # self-limiting: dispatching makes the newest run "now", so this cannot
-      # fire again for 20 hours whatever the outcome. At most one extra run a
-      # day. A genuinely broken MediaCloud is health.py's job to report, not
-      # this step's job to retry.
+      # self-limiting once GitHub accepts the dispatch: the newest run becomes
+      # "now", so another cannot be accepted for 30 hours. A rejected dispatch
+      # is retried on the next RSS cycle but consumes no MediaCloud quota. A
+      # genuinely broken MediaCloud is health.py's job to report, not this
+      # step's job to retry.
       - name: Back up the MediaCloud schedule
         if: always()
         continue-on-error: true
+        env:
+          # Override the job-level GIST_PAT only for this step. workflow_dispatch
+          # is an explicit exception to GITHUB_TOKEN's recursion protection.
+          GH_TOKEN: ${{ github.token }}
         run: |
           MC_WORKFLOW="mcloud-pipeline.yml"
-          THRESHOLD_HOURS=20
+          THRESHOLD_HOURS=30
+          TEST_BACKSTOP="${{ inputs.test_mcloud_backstop }}"
 
           RUNS=$(gh api \
             "repos/${GITHUB_REPOSITORY}/actions/workflows/${MC_WORKFLOW}/runs?per_page=20" \
@@ -111,16 +132,20 @@ jobs:
           AGE_H=$(( ( $(date -u +%s) - $(date -u -d "$NEWEST" +%s) ) / 3600 ))
           echo "Newest MediaCloud run: $NEWEST (${AGE_H}h ago, threshold ${THRESHOLD_HOURS}h)"
 
-          if [ "$AGE_H" -lt "$THRESHOLD_HOURS" ]; then
+          if [ "$TEST_BACKSTOP" = "true" ]; then
+            echo "Controlled backstop test requested; dispatching one MediaCloud run."
+          elif [ "$AGE_H" -lt "$THRESHOLD_HOURS" ]; then
             echo "Recent enough; nothing to do."
             exit 0
+          else
+            echo "::warning::No MediaCloud run in ${AGE_H}h - GitHub's schedule looks to have been missed. Dispatching one."
           fi
 
-          echo "::warning::No MediaCloud run in ${AGE_H}h - GitHub's schedule looks to have been missed. Dispatching one."
           if gh workflow run "$MC_WORKFLOW" --ref "${GITHUB_REF_NAME}"; then
             echo "Dispatched."
           else
-            echo "::warning::Dispatch failed. GIST_PAT likely lacks permission to dispatch workflows (classic PAT: public_repo; fine-grained: Actions read+write)."
+            echo "::warning::Dispatch failed using the job's GITHUB_TOKEN."
+            exit 1
           fi
 
       - name: Summary
