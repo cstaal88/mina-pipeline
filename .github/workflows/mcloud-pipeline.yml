@@ -178,7 +178,57 @@ jobs:
             fi
             echo ""
             echo "Uploading mediacloud_raw.jsonl to unified gist ($FINAL_RAW records)..."
-            gh gist edit "$GIST_ID" -f "mediacloud_raw.jsonl" "$SHARED_RAW"
+
+            # The RSS pipeline writes this same gist every 30 minutes, and on
+            # 2026-09-05 the two overlapped: this upload landed at 07:19:53,
+            # inside RSS run 33952167674 (07:18:09-07:20:12), and GitHub
+            # rejected it with "HTTP 409: Gist cannot be updated." A complete
+            # 43-minute collection -- 203 new records -- was thrown away over a
+            # two-minute window. getnews/clean.py has retried gist writes since
+            # July (GIST_ATTEMPTS); this side never did.
+            #
+            # Back off past a whole RSS run rather than just its write phase:
+            # ~150s of attempts and sleeps against RSS's ~2 minutes, still well
+            # inside the 30-minute gap before the next one starts. MediaCloud
+            # runs once a day, so there is no second writer to stampede with.
+            UPLOAD_OK=0
+            RETRY_DELAYS="15 30 60"
+            ATTEMPT=1
+            while : ; do
+              set +e
+              UPLOAD_ERR=$(gh gist edit "$GIST_ID" -f "mediacloud_raw.jsonl" "$SHARED_RAW" 2>&1)
+              RC=$?
+              set -e
+              if [ "$RC" -eq 0 ]; then
+                UPLOAD_OK=1
+                break
+              fi
+              echo "  attempt $ATTEMPT failed: $UPLOAD_ERR"
+
+              # The archive is ~24.7 MB against a write ceiling near 40 MiB --
+              # the wall raw.jsonl hit in August, which froze collection for 40
+              # hours. That failure is permanent, and retrying only buries the
+              # message under four slow 25 MB uploads. Stop and name it.
+              if echo "$UPLOAD_ERR" | grep -qi "too large"; then
+                echo "ERROR: the gist write ceiling has been reached."
+                echo "mediacloud_raw.jsonl must be sharded before collection resumes."
+                exit 1
+              fi
+
+              DELAY=$(echo "$RETRY_DELAYS" | cut -d" " -f"$ATTEMPT")
+              [ -n "$DELAY" ] || break
+              echo "  retrying in ${DELAY}s"
+              sleep "$DELAY"
+              ATTEMPT=$((ATTEMPT + 1))
+            done
+
+            if [ "$UPLOAD_OK" -ne 1 ]; then
+              echo "ERROR: could not upload mediacloud_raw.jsonl after $ATTEMPT attempts."
+              echo "The archive is unchanged. The 4-day lookback recollects this"
+              echo "day if the next run lands, so one failure is survivable --"
+              echo "three in four days is data loss."
+              exit 1
+            fi
             echo "✓ Unified gist updated: https://gist.github.com/$GIST_ID"
           fi
           
