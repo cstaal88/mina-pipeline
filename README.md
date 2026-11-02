@@ -1,7 +1,7 @@
 # MINA News Data Pipeline
 
 Two pipelines for collecting news:
-- **getnews/** - RSS-based collection (primary, daily)
+- **getnews/** - RSS-based collection (primary, each day)
 - **mediacloud/** - MediaCloud API collection (historical backfill)
 
 ## Quick Start (RSS Pipeline)
